@@ -1,11 +1,14 @@
 package sample.model;
 
 import org.opencv.core.*;
+import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.utils.Converters;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -171,12 +174,72 @@ public class Utils {
         return rotated;
     }
 
-//    static BufferedImage Mat2BufferedImage(Mat matrix)throws Exception {
-//        MatOfByte mob=new MatOfByte();
-//        Imgcodecs.imencode(".jpg", matrix, mob);
-//        byte ba[]=mob.toArray();
-//
-//        BufferedImage bi=ImageIO.read(new ByteArrayInputStream(ba));
-//        return bi;
-//    }
+    public static Mat bufferedImageToMat(BufferedImage bi) {
+        BufferedImage convertedImg = new BufferedImage(bi.getWidth(), bi.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
+        convertedImg.getGraphics().drawImage(bi, 0, 0, null);
+        Mat mat = new Mat(convertedImg.getHeight(), convertedImg.getWidth(), CvType.CV_8UC3);
+        System.out.println(convertedImg.getType());
+        byte[] data = ((DataBufferByte) convertedImg.getRaster().getDataBuffer()).getData();
+        mat.put(0, 0, data);
+        return mat;
+    }
+
+    public static Point convertColumnMatTo2DPoint(Mat m)
+    {
+        return new Point(m.get(0,0)[0], m.get(1,0)[0]);
+    }
+
+    public static BufferedImage matToBufferedImage(Mat matrix, BufferedImage bimg)
+    {
+        if ( matrix != null ) {
+            int cols = matrix.cols();
+            int rows = matrix.rows();
+            int elemSize = (int)matrix.elemSize();
+            byte[] data = new byte[cols * rows * elemSize];
+            int type;
+            matrix.get(0, 0, data);
+            switch (matrix.channels()) {
+                case 1:
+                    type = BufferedImage.TYPE_BYTE_GRAY;
+                    break;
+                case 3:
+                    type = BufferedImage.TYPE_3BYTE_BGR;
+                    // bgr to rgb
+                    byte b;
+                    for(int i=0; i<data.length; i=i+3) {
+                        b = data[i];
+                        data[i] = data[i+2];
+                        data[i+2] = b;
+                    }
+                    break;
+                default:
+                    return null;
+            }
+
+            // Reuse existing BufferedImage if possible
+            if (bimg == null || bimg.getWidth() != cols || bimg.getHeight() != rows || bimg.getType() != type) {
+                bimg = new BufferedImage(cols, rows, type);
+            }
+            bimg.getRaster().setDataElements(0, 0, cols, rows, data);
+        } else { // mat was null
+            bimg = null;
+        }
+        return bimg;
+    }
+
+    public static BufferedImage resize(BufferedImage img, int newW, int newH) {
+        Image tmp = img.getScaledInstance(newW, newH, Image.SCALE_SMOOTH);
+        BufferedImage dimg = new BufferedImage(newW, newH, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = dimg.createGraphics();
+        g2d.drawImage(tmp, 0, 0, null);
+        g2d.dispose();
+        return dimg;
+    }
+
+    public static void drawLineOnMat(Mat src, Mat m0, Mat m1, Scalar color, int thickness)
+    {
+        Point p0 = new Point(m0.get(0,0)[0], m0.get(1,0)[0]);
+        Point p1 = new Point(m1.get(0,0)[0], m1.get(1,0)[0]);
+        Imgproc.line(src, p0, p1, color, thickness);
+    }
 }

@@ -20,7 +20,7 @@ public class ZxingQRCodeReader implements IQRCodeReader{
         //Focus on the region
         Rect2d boundingBox = Utils.getTightestBoundingRectangle(cornerPoints);
         BufferedImage focusImg = Utils.cropImage(img, boundingBox);
-        Utils.showImageInPopup(focusImg);
+        //Utils.showImageInPopup(focusImg);
         // Image focusImg = img;
         //Extract QR Code info using ZXing
         LuminanceSource source = new BufferedImageLuminanceSource(focusImg);

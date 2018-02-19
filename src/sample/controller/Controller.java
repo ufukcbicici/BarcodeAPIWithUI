@@ -16,10 +16,11 @@ import javafx.scene.shape.Line;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.scene.input.MouseEvent;
+import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import sample.model.Algorithm;
-import sample.model.OrientationFinding.OrientationFinder;
 import sample.model.QRCodeReading.QRCodePoint;
+import sample.model.QRCodeReading.PipelineInfo;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -32,6 +33,8 @@ public class Controller {
     @FXML
     private Button detect_qr_code_btn;
     @FXML
+    private Button execute_pipeline_btn;
+    @FXML
     private Pane central_pane;
     @FXML
     private ImageView bandrol_imageview;
@@ -39,14 +42,14 @@ public class Controller {
     private File currentFile;
     private List<Point2D> listOfClickPoints;
     private List<Point2D> listOfImagePoints;
-    private List<Circle> listOfQRCodePoints;
-    private List<Line> listOfSelectionLines;
     private FileChooser fileChooser;
 
     public Controller()
     {
         super();
         fileChooser = new FileChooser();
+        listOfClickPoints = new ArrayList<>();
+        listOfImagePoints = new ArrayList<>();
     }
 
     @FXML
@@ -88,7 +91,41 @@ public class Controller {
     @FXML
     public void getQRCode(ActionEvent actionEvent)
     {
-        // addNewGuidanceLine(new Point2D(0, 0), new Point2D(200, 200));
+//        // addNewGuidanceLine(new Point2D(0, 0), new Point2D(200, 200));
+//        if (listOfImagePoints.size() == 4)
+//        {
+//            BufferedImage awtImg = SwingFXUtils.fromFXImage(currImage, null);
+//            List<Point> opencvPointList = new ArrayList<>();
+//            for(Point2D fxPoint : listOfImagePoints)
+//            {
+//                Point opencvPoint = new Point(fxPoint.getX(), fxPoint.getY());
+//                opencvPointList.add(opencvPoint);
+//                System.out.println("(x:"+opencvPoint.x+","+opencvPoint.y+")");
+//            }
+//            List<QRCodePoint> qrCodePointList = Algorithm.getQRCodePoints(awtImg, opencvPointList);
+//            if(qrCodePointList == null)
+//                return;
+//            // Draw QrCodePoints
+//            for(QRCodePoint qrCodePoint : qrCodePointList)
+//            {
+//                Point2D imageViewPoint = convertFromImageToImageViewCoords(new Point2D(qrCodePoint.getLocation().x,
+//                        qrCodePoint.getLocation().y));
+//                addNewCircle(imageViewPoint.getX(), imageViewPoint.getY(), 5.0, Color.BLUE);
+//            }
+//            // Draw Up Vector
+//            PipelineInfo pipelineInfo = Algorithm.getOrientationFromQRCodePoints(awtImg, qrCodePointList);
+//            Mat upVector = pipelineInfo.getRotationUpVectorStartFinishPoints();
+//            Point2D up0 = convertFromImageToImageViewCoords(
+//                    new Point2D(upVector.get(0,0)[0], upVector.get(0,1)[0]));
+//            Point2D up1 = convertFromImageToImageViewCoords(
+//                    new Point2D(upVector.get(1,0)[0], upVector.get(1,1)[0]));
+//            addNewGuidanceLine(up0, up1, Color.YELLOWGREEN);
+//        }
+    }
+
+    @FXML
+    public void executePipeline(ActionEvent actionEvent)
+    {
         if (listOfImagePoints.size() == 4)
         {
             BufferedImage awtImg = SwingFXUtils.fromFXImage(currImage, null);
@@ -99,21 +136,8 @@ public class Controller {
                 opencvPointList.add(opencvPoint);
                 System.out.println("(x:"+opencvPoint.x+","+opencvPoint.y+")");
             }
-            List<QRCodePoint> qrCodePointList = Algorithm.getQRCodePoints(awtImg, opencvPointList);
-            if(qrCodePointList == null)
-                return;
-            // Draw QrCodePoints
-            listOfQRCodePoints = new ArrayList<>();
-            for(QRCodePoint qrCodePoint : qrCodePointList)
-            {
-                Point2D imageViewPoint = convertFromImageToImageViewCoords(new Point2D(qrCodePoint.getLocation().x,
-                        qrCodePoint.getLocation().y));
-                addNewCircle(imageViewPoint.getX(), imageViewPoint.getY(), 5.0, Color.BLUE);
-            }
-            Algorithm.getOrientationFromQRCodePoints(qrCodePointList);
+            Algorithm.execute(awtImg, opencvPointList);
         }
-
-
     }
 
     @FXML
@@ -135,53 +159,42 @@ public class Controller {
         {
             Point2D p0 = listOfClickPoints.get(listOfClickPoints.size()-2);
             Point2D p1 = listOfClickPoints.get(listOfClickPoints.size()-1);
-            addNewGuidanceLine(p0,p1);
+            addNewGuidanceLine(p0,p1,Color.RED);
         }
         if(listOfClickPoints.size() == 4)
         {
             Point2D p0 = listOfClickPoints.get(listOfClickPoints.size()-1);
             Point2D p1 = listOfClickPoints.get(0);
-            addNewGuidanceLine(p0,p1);
+            addNewGuidanceLine(p0,p1,Color.RED);
         }
     }
 
     private void addNewCircle(double centerx, double centery, double radius, Color color)
     {
         Circle circle = new Circle(centerx, centery, radius, color);
-        listOfQRCodePoints.add(circle);
         central_pane.getChildren().add(circle);
-
     }
 
-    private void addNewGuidanceLine(Point2D p0, Point2D p1)
+    private void addNewGuidanceLine(Point2D p0, Point2D p1, Color color)
     {
         Line line = new Line(p0.getX(), p0.getY(), p1.getX(), p1.getY());
         //Line line = new Line(0, 0, 100, 100);
         line.setFill(null);
-        line.setStroke(Color.RED);
+        line.setStroke(color);
         line.setStrokeWidth(2);
-        listOfSelectionLines.add(line);
         central_pane.getChildren().add(line);
     }
 
     private void clearSceneInfo()
     {
+        List<Node> nodeList = new ArrayList<>(central_pane.getChildren());
+        for(Node n : nodeList)
+        {
+            if(n != bandrol_imageview)
+                central_pane.getChildren().remove(n);
+        }
         listOfClickPoints = new ArrayList<>();
         listOfImagePoints = new ArrayList<>();
-        if (listOfSelectionLines != null)
-        {
-            for(Line line : listOfSelectionLines)
-                central_pane.getChildren().remove(line);
-        }
-        if(listOfQRCodePoints != null)
-        {
-            for(Circle circle : listOfQRCodePoints)
-            {
-                central_pane.getChildren().remove(circle);
-            }
-        }
-        listOfSelectionLines = new ArrayList<>();
-        listOfQRCodePoints = new ArrayList<>();
     }
 
     private Point2D convertFromImageViewToImageCoords(Point2D imageViewPoint)
