@@ -1,4 +1,4 @@
-package sample.model.QRCodeReading;
+package bandrol_training.model.QRCodeReading;
 
 import org.opencv.core.Point;
 

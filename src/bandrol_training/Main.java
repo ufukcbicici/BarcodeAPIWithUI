@@ -1,4 +1,4 @@
-package sample;
+package bandrol_training;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -6,15 +6,15 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.opencv.core.Core;
-import sample.controller.Controller;
-import sample.model.Algorithm;
+import bandrol_training.controller.Controller;
+import bandrol_training.model.Algorithm;
 
 public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception{
         Algorithm.InitAlgorithm();
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("view/sample.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("view/bandrol_ui.fxml"));
         Parent rootBorderPane = loader.load();
         Controller controller = loader.getController();
         primaryStage.setTitle("Hello World");

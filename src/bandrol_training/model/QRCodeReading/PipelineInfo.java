@@ -1,4 +1,4 @@
-package sample.model.QRCodeReading;
+package bandrol_training.model.QRCodeReading;
 
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -15,6 +15,7 @@ public class PipelineInfo {
     private BufferedImage rotatedImage;
     private List<QRCodePoint> finderPatterns;
     private QRCodePoint alignmentPattern;
+    private Mat localizedSerialNumberImg;
 
     public double getAngle() {
         return angle;
@@ -78,5 +79,13 @@ public class PipelineInfo {
 
     public void setAlignmentPattern(QRCodePoint alignmentPattern) {
         this.alignmentPattern = alignmentPattern;
+    }
+
+    public Mat getLocalizedSerialNumberImg() {
+        return localizedSerialNumberImg;
+    }
+
+    public void setLocalizedSerialNumberImg(Mat localizedSerialNumberImg) {
+        this.localizedSerialNumberImg = localizedSerialNumberImg;
     }
 }

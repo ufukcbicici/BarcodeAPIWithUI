@@ -1,12 +1,11 @@
-package sample.model.OrientationFinding;
+package bandrol_training.model.OrientationFinding;
 
 import org.opencv.core.*;
-import sample.model.QRCodeReading.QRCodePoint;
-import sample.model.QRCodeReading.QRCodePointTypes;
-import sample.model.QRCodeReading.PipelineInfo;
-import sample.model.Utils;
+import bandrol_training.model.QRCodeReading.QRCodePoint;
+import bandrol_training.model.QRCodeReading.QRCodePointTypes;
+import bandrol_training.model.QRCodeReading.PipelineInfo;
+import bandrol_training.model.Utils;
 
-import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.stream.Collectors;
 

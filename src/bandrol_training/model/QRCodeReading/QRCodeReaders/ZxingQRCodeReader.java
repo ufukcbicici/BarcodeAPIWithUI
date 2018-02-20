@@ -1,15 +1,15 @@
-package sample.model.QRCodeReading.QRCodeReaders;
+package bandrol_training.model.QRCodeReading.QRCodeReaders;
 
 import com.google.zxing.qrcode.detector.FinderPattern;
 import org.opencv.core.Point;
 import org.opencv.core.Rect2d;
-import sample.model.QRCodeReading.IQRCodeReader;
+import bandrol_training.model.QRCodeReading.IQRCodeReader;
 import com.google.zxing.*;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
-import sample.model.QRCodeReading.QRCodePoint;
-import sample.model.QRCodeReading.QRCodePointTypes;
-import sample.model.Utils;
+import bandrol_training.model.QRCodeReading.QRCodePoint;
+import bandrol_training.model.QRCodeReading.QRCodePointTypes;
+import bandrol_training.model.Utils;
 
 import java.awt.image.BufferedImage;
 import java.util.*;

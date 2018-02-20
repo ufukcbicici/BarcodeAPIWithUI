@@ -1,14 +1,18 @@
-package sample.controller;
+package bandrol_training.controller;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -16,11 +20,9 @@ import javafx.scene.shape.Line;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.scene.input.MouseEvent;
-import org.opencv.core.Mat;
+import javafx.stage.WindowEvent;
 import org.opencv.core.Point;
-import sample.model.Algorithm;
-import sample.model.QRCodeReading.QRCodePoint;
-import sample.model.QRCodeReading.PipelineInfo;
+import bandrol_training.model.Algorithm;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -43,6 +45,27 @@ public class Controller {
     private List<Point2D> listOfClickPoints;
     private List<Point2D> listOfImagePoints;
     private FileChooser fileChooser;
+    private boolean isInPipelineMode;
+    @FXML
+    private RadioButton pipeline_radio_btn;
+    @FXML
+    private RadioButton labeling_radio_btn;
+    @FXML
+    private ToggleGroup radioGroup;
+    @FXML
+    private TextField sliding_window_width_tf;
+    @FXML
+    private TextField sliding_window_height_tf;
+    @FXML
+    private Label image_name_label;
+    @FXML
+    private Label image_height_lbl;
+    @FXML
+    private Label image_width_lbl;
+    @FXML
+    private ImageView sliding_window_large_image_view;
+    @FXML
+    private TextField negative_iou_tf;
 
     public Controller()
     {
@@ -50,6 +73,15 @@ public class Controller {
         fileChooser = new FileChooser();
         listOfClickPoints = new ArrayList<>();
         listOfImagePoints = new ArrayList<>();
+        isInPipelineMode = true;
+    }
+
+    @FXML
+    public void modeChanged(ActionEvent action)
+    {
+        clearSceneInfo();
+        System.out.println("pipeline_radio_btn:" + pipeline_radio_btn.isSelected());
+        System.out.println("labeling_radio_btn:" + labeling_radio_btn.isSelected());
     }
 
     @FXML
@@ -86,6 +118,12 @@ public class Controller {
 //            System.out.println("ImageView Width:"+bandrol_imageview.getBoundsInParent().getWidth());
 //            System.out.println("ImageView Height:"+bandrol_imageview.getBoundsInParent().getHeight());
         }
+    }
+
+    @FXML
+    public void labelImage()
+    {
+
     }
 
     @FXML
@@ -143,30 +181,39 @@ public class Controller {
     @FXML
     public void onMouseClickedOverImage(MouseEvent me)
     {
-        if(listOfClickPoints.size() == 4)
+        if(!labeling_radio_btn.isSelected() && pipeline_radio_btn.isSelected())
         {
-            clearSceneInfo();
+            if(listOfClickPoints.size() == 4)
+            {
+                clearSceneInfo();
+            }
+            //Parent parent = bandrol_imageview.getParent();
+            Point2D localPoint = new Point2D(me.getX(), me.getY());
+            Point2D transformedScreenPoint = bandrol_imageview.localToParent(localPoint);
+            Point2D transformedImagePoint = convertFromImageViewToImageCoords(localPoint);
+            listOfClickPoints.add(transformedScreenPoint);
+            listOfImagePoints.add(transformedImagePoint);
+            System.out.println("X:"+me.getX()+" Y:"+me.getY());
+            // Draw a new line
+            if(listOfClickPoints.size() > 1)
+            {
+                Point2D p0 = listOfClickPoints.get(listOfClickPoints.size()-2);
+                Point2D p1 = listOfClickPoints.get(listOfClickPoints.size()-1);
+                addNewGuidanceLine(p0,p1,Color.RED);
+            }
+            if(listOfClickPoints.size() == 4)
+            {
+                Point2D p0 = listOfClickPoints.get(listOfClickPoints.size()-1);
+                Point2D p1 = listOfClickPoints.get(0);
+                addNewGuidanceLine(p0,p1,Color.RED);
+            }
         }
-        //Parent parent = bandrol_imageview.getParent();
-        Point2D localPoint = new Point2D(me.getX(), me.getY());
-        Point2D transformedScreenPoint = bandrol_imageview.localToParent(localPoint);
-        Point2D transformedImagePoint = convertFromImageViewToImageCoords(localPoint);
-        listOfClickPoints.add(transformedScreenPoint);
-        listOfImagePoints.add(transformedImagePoint);
-        System.out.println("X:"+me.getX()+" Y:"+me.getY());
-        // Draw a new line
-        if(listOfClickPoints.size() > 1)
-        {
-            Point2D p0 = listOfClickPoints.get(listOfClickPoints.size()-2);
-            Point2D p1 = listOfClickPoints.get(listOfClickPoints.size()-1);
-            addNewGuidanceLine(p0,p1,Color.RED);
-        }
-        if(listOfClickPoints.size() == 4)
-        {
-            Point2D p0 = listOfClickPoints.get(listOfClickPoints.size()-1);
-            Point2D p1 = listOfClickPoints.get(0);
-            addNewGuidanceLine(p0,p1,Color.RED);
-        }
+
+    }
+
+    @FXML void onKeyReleased(KeyEvent ke)
+    {
+
     }
 
     private void addNewCircle(double centerx, double centery, double radius, Color color)

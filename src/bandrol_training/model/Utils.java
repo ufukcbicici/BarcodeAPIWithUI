@@ -1,4 +1,4 @@
-package sample.model;
+package bandrol_training.model;
 
 import org.opencv.core.*;
 import org.opencv.core.Point;
@@ -9,8 +9,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class Utils {
@@ -187,6 +189,73 @@ public class Utils {
     public static Point convertColumnMatTo2DPoint(Mat m)
     {
         return new Point(m.get(0,0)[0], m.get(1,0)[0]);
+    }
+
+    public static Mat convertToNormalizedRGB(Mat img)
+    {
+        Mat normalizedImg = img.clone();
+        List<Mat> channels = new ArrayList<>();
+        Core.split(img, channels);
+        for(int i=0;i<img.rows();i++)
+        {
+            for(int j=0;j<img.cols();j++)
+            {
+                double red = channels.get(2).get(i,j)[0];
+                double green = channels.get(1).get(i,j)[0];
+                double blue = channels.get(0).get(i,j)[0];
+                double sum = red + green + blue;
+                double normalizedBlue = 255.0 * (blue / sum);
+                double normalizedGreen = 255.0 * (green / sum);
+                double normalizedRed = 255.0 * (red / sum);
+                normalizedImg.put(i,j, normalizedBlue, normalizedGreen, normalizedRed);
+            }
+        }
+        return normalizedImg;
+    }
+
+    public static boolean checkFileExist(String filePathString)
+    {
+        File f = new File(filePathString);
+        return f.exists() && !f.isDirectory();
+    }
+
+    public static String getNonExistingFileName(String filePathString, String filePostFix)
+    {
+        String fileName = filePathString + filePostFix;
+        if (!checkFileExist(fileName))
+            return filePathString;
+        int i = 1;
+        while(checkFileExist(filePathString + i + filePostFix))
+            i++;
+        return (filePathString + i + filePostFix);
+    }
+
+    public static void showHistogram(Mat img)
+    {
+        Mat histogram = new Mat();
+        Mat normalizedHistogram = new Mat();
+        int hist_w = 512; int hist_h = 400;
+        int histSize = 256;
+        int bin_w = Math.round( hist_w/histSize );
+        Imgproc.calcHist(
+                new ArrayList<>(Collections.singletonList(img)), new MatOfInt(0), new Mat(), histogram,
+                new MatOfInt(256), new MatOfFloat(0, 256), false);
+        System.out.println("Histogram");
+        System.out.println(histogram.dump());
+        Mat histogramImg = new Mat(400, 400, CvType.CV_8UC3, new Scalar(0,0,0));
+        // normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
+        Core.normalize(histogram, normalizedHistogram, 0, histogramImg.rows(), Core.NORM_MINMAX);
+        for( int i = 1; i < 256; i++ )
+        {
+            Mat p0 = new Mat(2, 1, CvType.CV_64F);
+            Mat p1 = new Mat(2, 1, CvType.CV_64F);
+            p0.put(0,0, bin_w*(i-1));
+            p0.put(1,0, hist_h - Math.round(normalizedHistogram.get(i-1,0)[0]));
+            p1.put(0,0, bin_w*(i));
+            p1.put(1,0, hist_h - Math.round(normalizedHistogram.get(i,0)[0]));
+            drawLineOnMat(histogramImg, p0, p1, new Scalar(255,0,0), 1);
+        }
+        showImageInPopup(Utils.matToBufferedImage(histogramImg, null));
     }
 
     public static BufferedImage matToBufferedImage(Mat matrix, BufferedImage bimg)
