@@ -17,6 +17,8 @@ public class Main extends Application {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("view/bandrol_ui.fxml"));
         Parent rootBorderPane = loader.load();
         Controller controller = loader.getController();
+        controller.setPrimaryStage(primaryStage);
+        controller.initUIElements();
         primaryStage.setTitle("Hello World");
         primaryStage.setScene(new Scene(rootBorderPane, Constants.WIDTH, Constants.HEIGHT));
         primaryStage.show();
