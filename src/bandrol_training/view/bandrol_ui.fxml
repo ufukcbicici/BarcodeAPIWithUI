@@ -18,7 +18,7 @@
       <children>
         <Button fx:id="open_image_btn" mnemonicParsing="false" onAction="#openImage" prefHeight="30.0" prefWidth="121.0" text="Open Image" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
         <Button fx:id="execute_pipeline_btn" minHeight="19.0" mnemonicParsing="false" onAction="#executePipeline" prefHeight="27.0" prefWidth="146.0" text="Execute Pipeline" GridPane.columnIndex="3" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
-        <Button id="detect_qr_code" fx:id="start_labeling_img_btn" contentDisplay="CENTER" mnemonicParsing="false" onAction="#startLabelingImage" prefHeight="30.0" prefWidth="178.0" text="Label Image" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
+        <Button id="detect_qr_code" fx:id="start_labeling_img_btn" contentDisplay="CENTER" mnemonicParsing="false" onAction="#startAnnotation" prefHeight="30.0" prefWidth="178.0" text="Create Labeled Images" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
         <GridPane GridPane.columnIndex="1" GridPane.rowIndex="0">
           <children>
             <RadioButton fx:id="labeling_radio_btn" mnemonicParsing="false" onAction="#modeChanged" text="Labelling Mode" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER">

@@ -1,9 +1,6 @@
 package bandrol_training.controller;
 
-import bandrol_training.model.Algorithm;
-import bandrol_training.model.GroundTruth;
-import bandrol_training.model.LabelingStateContainer;
-import bandrol_training.model.Utils;
+import bandrol_training.model.*;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -190,9 +187,60 @@ public class Controller {
     }
 
     @FXML
-    public void startLabelingImage(ActionEvent actionEvent)
+    public void startAnnotation(ActionEvent actionEvent)
     {
-        startLabelImage();
+        // Step 1) Write all ground truth boxes into the db
+        DbUtils.writeGroundTruth(new ArrayList<>(LabelingStateContainer.groundTruthMap.values()));
+        // Step 2) Create ground truth positive samples with proper data augmentation
+//        double minRotationAngle = -5.0;
+//        double stepRotationAngle = 0.25;
+//        double maxRotationAngle = 5.0;
+//        double minHorizontalOffset = -2.0;
+//        double stepHorizontal = 1.0;
+//        double maxHorizontalOffset = 2.0;
+//        double minVerticalOffset = -2.0;
+//        double stepVertical = 1.0;
+//        double maxVerticalOffset = 2.0;
+//        for(Rectangle rect : LabelingStateContainer.groundTruthMap.keySet())
+//        {
+//            GroundTruth gt = LabelingStateContainer.groundTruthMap.get(rect);
+//            DataGenerator.augmentSample(currentFile.getName(),
+//                    LabelingStateContainer.sourceTrainingImg, gt,
+//                    minRotationAngle, stepRotationAngle, maxRotationAngle,
+//                    minHorizontalOffset, stepHorizontal, maxHorizontalOffset,
+//                    minVerticalOffset, stepVertical, maxVerticalOffset);
+//        }
+
+
+        // Rotation angles
+//        List<Double> rotationAngles = new ArrayList<>();
+//        double minAngle = -15.0;
+//        double stepAngle = 0.25;
+//        double maxAngle = 15.0;
+//        double currAngle = minAngle;
+//        while (currAngle < maxAngle) {
+//            rotationAngles.add(currAngle);
+//            currAngle += stepAngle;
+//        }
+//        rotationAngles.toArray();
+//        // Translation amounts
+//        List<Double> verticalTranslation = new ArrayList<>();
+//        List<Double> horizontalTranslation = new ArrayList<>();
+//        double minOffset = -5.0;
+//        double stepOffset = 1.0;
+//        double maxOffset = 5.0;
+//
+//
+//
+//
+//        for(Rectangle rect : LabelingStateContainer.groundTruthMap.keySet())
+//        {
+////            GroundTruth gt = LabelingStateContainer.groundTruthMap.get(rect);
+////            DataGenerator.augmentSample(
+////                    LabelingStateContainer.sourceTrainingImg, gt, );
+//        }
+
+
     }
 
     @FXML
@@ -352,7 +400,7 @@ public class Controller {
         String currentLabel = label_selection_cmbox.getSelectionModel().getSelectedItem();
         LabelingStateContainer.currBB.setStroke(Color.BLUE);
         LabelingStateContainer.groundTruthMap.put(
-                LabelingStateContainer.currBB, new GroundTruth(currentLabel,
+                LabelingStateContainer.currBB, new GroundTruth(currentFile.getName(), currentLabel,
                         (int)LabelingStateContainer.currBB.getX(), (int)LabelingStateContainer.currBB.getY(),
                 (int)LabelingStateContainer.currBB.getWidth(), (int)LabelingStateContainer.currBB.getHeight()));
         LabelingStateContainer.rectangleList.add(LabelingStateContainer.currBB);

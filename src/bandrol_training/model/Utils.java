@@ -223,7 +223,7 @@ public class Utils {
     {
         String fileName = filePathString + filePostFix;
         if (!checkFileExist(fileName))
-            return filePathString;
+            return fileName;
         int i = 1;
         while(checkFileExist(filePathString + i + filePostFix))
             i++;
@@ -256,6 +256,18 @@ public class Utils {
             drawLineOnMat(histogramImg, p0, p1, new Scalar(255,0,0), 1);
         }
         showImageInPopup(Utils.matToBufferedImage(histogramImg, null));
+    }
+
+    public static List<Double> rangeToList(double min, double max, double step)
+    {
+        List<Double> l = new ArrayList<>();
+        double curr = min;
+        while (curr <= max)
+        {
+            l.add(curr);
+            curr += step;
+        }
+        return l;
     }
 
     public static BufferedImage matToBufferedImage(Mat matrix, BufferedImage bimg)
