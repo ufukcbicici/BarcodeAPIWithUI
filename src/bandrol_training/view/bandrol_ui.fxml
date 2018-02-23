@@ -49,9 +49,9 @@
     </GridPane>
   </bottom>
   <center>
-    <Pane fx:id="central_pane" onKeyReleased="#onKeyReleased" prefHeight="86.0" prefWidth="362.0">
+    <Pane fx:id="central_pane" onKeyReleased="#onKeyReleased" prefHeight="582.0" prefWidth="786.0">
       <children>
-        <ImageView id="bandrol_view" fx:id="bandrol_imageview" fitHeight="450.0" fitWidth="600.0" layoutX="0.0" layoutY="0.0" onMouseClicked="#onMouseClickedOverImage" pickOnBounds="true" preserveRatio="true" />
+        <ImageView id="bandrol_view" fx:id="bandrol_imageview" fitHeight="411.75" fitWidth="549.0" layoutX="0.0" layoutY="0.0" onMouseClicked="#onMouseClickedOverImage" pickOnBounds="true" preserveRatio="true" />
       </children>
     </Pane>
   </center>
@@ -110,11 +110,6 @@
           <children>
             <Button fx:id="set_sliding_window_size_btn" mnemonicParsing="false" prefHeight="30.0" prefWidth="146.0" text="Set Sli. Window Size" textAlignment="LEFT" underline="false" wrapText="false" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
             <Button fx:id="set_main_window_size_btn" mnemonicParsing="false" prefHeight="30.0" prefWidth="130.0" text="Set Main Image Size" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
-            <ComboBox fx:id="label_selection_cmbox" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER">
-              <items>
-                <FXCollections fx:factory="observableArrayList" />
-              </items>
-            </ComboBox>
           </children>
           <columnConstraints>
             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -141,7 +136,86 @@
     <Insets />
   </padding>
   <right>
-    <GridPane>
+    <GridPane minHeight="-1.0" minWidth="-Infinity" prefWidth="220.0">
+      <children>
+        <GridPane GridPane.columnIndex="0" GridPane.rowIndex="0">
+          <children>
+            <GridPane GridPane.columnIndex="0" GridPane.rowIndex="0">
+              <children>
+                <Label text="Max Rotation Angle" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
+                <Label text="Step Angle" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
+                <TextField fx:id="max_rotation_angle_tf" prefWidth="200.0" text="5.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                <TextField fx:id="step_angle_tf" prefWidth="200.0" text="0.25" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+              </children>
+              <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+              </columnConstraints>
+              <rowConstraints>
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+              </rowConstraints>
+            </GridPane>
+            <GridPane GridPane.columnIndex="0" GridPane.rowIndex="1">
+              <children>
+                <Label text="Max H. Offset" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
+                <Label text="H. Step Offset" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
+                <TextField fx:id="max_horizontal_offset_tf" prefWidth="200.0" text="2.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                <TextField fx:id="horizontal_step_tf" prefWidth="200.0" text="1.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+              </children>
+              <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+              </columnConstraints>
+              <rowConstraints>
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+              </rowConstraints>
+            </GridPane>
+            <GridPane GridPane.columnIndex="0" GridPane.rowIndex="2">
+              <children>
+                <Label text="Max V. Offset" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
+                <Label text="V. Step Offset" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
+                <TextField fx:id="max_vertical_offset_tf" prefWidth="200.0" text="2.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                <TextField fx:id="vertical_step_tf" prefWidth="200.0" text="1.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+              </children>
+              <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+              </columnConstraints>
+              <rowConstraints>
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+              </rowConstraints>
+            </GridPane>
+          </children>
+          <columnConstraints>
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+          </columnConstraints>
+          <rowConstraints>
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+          </rowConstraints>
+        </GridPane>
+        <GridPane GridPane.columnIndex="0" GridPane.rowIndex="1">
+          <children>
+            <ComboBox fx:id="label_selection_cmbox" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER">
+              <items>
+                <FXCollections fx:factory="observableArrayList" />
+              </items>
+            </ComboBox>
+            <Button mnemonicParsing="false" onAction="#onAddGroundTruth" prefHeight="30.0" prefWidth="146.0" text="Add Ground Truth" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
+          </children>
+          <columnConstraints>
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+          </columnConstraints>
+          <rowConstraints>
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+          </rowConstraints>
+        </GridPane>
+      </children>
       <columnConstraints>
         <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
       </columnConstraints>

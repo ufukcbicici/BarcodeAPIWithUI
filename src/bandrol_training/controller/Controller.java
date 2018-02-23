@@ -84,7 +84,18 @@ public class Controller {
     private TextField reference_width_tf;
     @FXML
     private ComboBox<String> label_selection_cmbox;
-
+    @FXML
+    private TextField max_rotation_angle_tf;
+    @FXML
+    private TextField step_angle_tf;
+    @FXML
+    private TextField max_horizontal_offset_tf;
+    @FXML
+    private TextField horizontal_step_tf;
+    @FXML
+    private TextField max_vertical_offset_tf;
+    @FXML
+    private TextField vertical_step_tf;
 
     public Controller()
     {
@@ -189,27 +200,29 @@ public class Controller {
     @FXML
     public void startAnnotation(ActionEvent actionEvent)
     {
+        System.out.println(bandrol_imageview.getBoundsInParent());
+        System.out.println(bandrol_imageview.getBoundsInLocal());
         // Step 1) Write all ground truth boxes into the db
         DbUtils.writeGroundTruth(new ArrayList<>(LabelingStateContainer.groundTruthMap.values()));
         // Step 2) Create ground truth positive samples with proper data augmentation
-//        double minRotationAngle = -5.0;
-//        double stepRotationAngle = 0.25;
-//        double maxRotationAngle = 5.0;
-//        double minHorizontalOffset = -2.0;
-//        double stepHorizontal = 1.0;
-//        double maxHorizontalOffset = 2.0;
-//        double minVerticalOffset = -2.0;
-//        double stepVertical = 1.0;
-//        double maxVerticalOffset = 2.0;
-//        for(Rectangle rect : LabelingStateContainer.groundTruthMap.keySet())
-//        {
-//            GroundTruth gt = LabelingStateContainer.groundTruthMap.get(rect);
-//            DataGenerator.augmentSample(currentFile.getName(),
-//                    LabelingStateContainer.sourceTrainingImg, gt,
-//                    minRotationAngle, stepRotationAngle, maxRotationAngle,
-//                    minHorizontalOffset, stepHorizontal, maxHorizontalOffset,
-//                    minVerticalOffset, stepVertical, maxVerticalOffset);
-//        }
+        double minRotationAngle = -Double.parseDouble(max_rotation_angle_tf.getText());
+        double stepRotationAngle = Double.parseDouble(step_angle_tf.getText());
+        double maxRotationAngle = -minRotationAngle;
+        double minHorizontalOffset = -Double.parseDouble(max_horizontal_offset_tf.getText());
+        double stepHorizontal = Double.parseDouble(horizontal_step_tf.getText());
+        double maxHorizontalOffset = -minHorizontalOffset;
+        double minVerticalOffset = -Double.parseDouble(max_vertical_offset_tf.getText());
+        double stepVertical = Double.parseDouble(vertical_step_tf.getText());
+        double maxVerticalOffset = -minVerticalOffset;
+        for(Rectangle rect : LabelingStateContainer.groundTruthMap.keySet())
+        {
+            GroundTruth gt = LabelingStateContainer.groundTruthMap.get(rect);
+            DataGenerator.augmentSample(currentFile.getName(),
+                    LabelingStateContainer.sourceTrainingImg, gt,
+                    minRotationAngle, stepRotationAngle, maxRotationAngle,
+                    minHorizontalOffset, stepHorizontal, maxHorizontalOffset,
+                    minVerticalOffset, stepVertical, maxVerticalOffset);
+        }
 
 
         // Rotation angles
@@ -293,6 +306,12 @@ public class Controller {
             }
         }
 
+    }
+
+    @FXML
+    public void onAddGroundTruth(ActionEvent ae)
+    {
+        addGroundTruth();
     }
 
     @FXML
