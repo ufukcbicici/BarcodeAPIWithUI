@@ -25,12 +25,16 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static bandrol_training.model.LabelingStateContainer.currBB;
 
 public class Controller {
     private Stage primaryStage;
@@ -96,6 +100,12 @@ public class Controller {
     private TextField max_vertical_offset_tf;
     @FXML
     private TextField vertical_step_tf;
+    @FXML
+    private Label sliding_window_x_lbl;
+    @FXML
+    private Label sliding_window_y_lbl;
+    @FXML
+    private Label iou_lbl;
 
     public Controller()
     {
@@ -191,7 +201,7 @@ public class Controller {
         bandrol_imageview.setImage(currImage);
         double sliding_window_width = Double.parseDouble(sliding_window_width_tf.getText());
         double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
-        LabelingStateContainer.currBB =
+        currBB =
                 addNewSlidingWindowRectangle(0,0,sliding_window_width, sliding_window_height, Color.RED);
 
 
@@ -319,7 +329,7 @@ public class Controller {
     {
         if(!labeling_radio_btn.isSelected())
             return;
-        if(LabelingStateContainer.currBB == null || LabelingStateContainer.sourceTrainingImg == null)
+        if(currBB == null || LabelingStateContainer.sourceTrainingImg == null)
             return;
         double horizontalLimit = LabelingStateContainer.sourceTrainingImg.cols()
                 - Double.parseDouble(sliding_window_width_tf.getText());
@@ -329,26 +339,26 @@ public class Controller {
         switch (ke.getText())
         {
             case "d":
-                if (LabelingStateContainer.currBB.getX() < horizontalLimit) {
-                    LabelingStateContainer.currBB.setX(LabelingStateContainer.currBB.getX() + 1.0);
+                if (currBB.getX() < horizontalLimit) {
+                    currBB.setX(currBB.getX() + 1.0);
                     didWindowChange = true;
                 }
                 break;
             case "a":
-                if (LabelingStateContainer.currBB.getX() > 0) {
-                    LabelingStateContainer.currBB.setX(LabelingStateContainer.currBB.getX() - 1.0);
+                if (currBB.getX() > 0) {
+                    currBB.setX(currBB.getX() - 1.0);
                     didWindowChange = true;
                 }
                 break;
             case "w":
-                if (LabelingStateContainer.currBB.getY() > 0) {
-                    LabelingStateContainer.currBB.setY(LabelingStateContainer.currBB.getY() - 1.0);
+                if (currBB.getY() > 0) {
+                    currBB.setY(currBB.getY() - 1.0);
                     didWindowChange = true;
                 }
                 break;
             case "s":
-                if (LabelingStateContainer.currBB.getY() < verticalLimit) {
-                    LabelingStateContainer.currBB.setY(LabelingStateContainer.currBB.getY() + 1.0);
+                if (currBB.getY() < verticalLimit) {
+                    currBB.setY(currBB.getY() + 1.0);
                     didWindowChange = true;
                 }
                 break;
@@ -397,18 +407,24 @@ public class Controller {
         if(didWindowChange)
         {
             Mat slidingWindowContent = LabelingStateContainer.sourceTrainingImg.submat(
-                    (int)LabelingStateContainer.currBB.getY(), (int)(LabelingStateContainer.currBB.getY() +
-                            LabelingStateContainer.currBB.getHeight()),
-                    (int)LabelingStateContainer.currBB.getX(),
-                    (int)(LabelingStateContainer.currBB.getX() + LabelingStateContainer.currBB.getWidth()));
-//            System.out.println(slidingWindowContent.rows());
-//            System.out.println(slidingWindowContent.cols());
+                    (int) currBB.getY(), (int)(currBB.getY() +
+                            currBB.getHeight()),
+                    (int) currBB.getX(),
+                    (int)(currBB.getX() + currBB.getWidth()));
             sliding_window_large_image_view.setImage(
                     SwingFXUtils.toFXImage(
                             Objects.requireNonNull(Utils.matToBufferedImage(slidingWindowContent, null)),
                             null));
-//            System.out.println(sliding_window_large_image_view.getBoundsInParent().getWidth());
-//            System.out.println(sliding_window_large_image_view.getBoundsInParent().getHeight());
+            // Set UI Information
+            sliding_window_x_lbl.setText("" + currBB.getX());
+            sliding_window_y_lbl.setText("" + currBB.getY());
+            double max_iou = Utils.getMaxIoU(
+            new Rect((int)currBB.getX(), (int)currBB.getY(), (int)currBB.getWidth(), (int)currBB.getHeight()),
+            LabelingStateContainer.groundTruthMap.values().stream().
+                    map(GroundTruth::getBoundingRect).collect(Collectors.toList()));
+            iou_lbl.setText("" + max_iou);
+
+
         }
 
     }
@@ -417,15 +433,15 @@ public class Controller {
     {
         // Get ground truth label
         String currentLabel = label_selection_cmbox.getSelectionModel().getSelectedItem();
-        LabelingStateContainer.currBB.setStroke(Color.BLUE);
+        currBB.setStroke(Color.BLUE);
         LabelingStateContainer.groundTruthMap.put(
-                LabelingStateContainer.currBB, new GroundTruth(currentFile.getName(), currentLabel,
-                        (int)LabelingStateContainer.currBB.getX(), (int)LabelingStateContainer.currBB.getY(),
-                (int)LabelingStateContainer.currBB.getWidth(), (int)LabelingStateContainer.currBB.getHeight()));
-        LabelingStateContainer.rectangleList.add(LabelingStateContainer.currBB);
-        LabelingStateContainer.currBB =
-                addNewSlidingWindowRectangle(LabelingStateContainer.currBB.getX(), LabelingStateContainer.currBB.getY(),
-                        LabelingStateContainer.currBB.getWidth(), LabelingStateContainer.currBB.getHeight(),
+                currBB, new GroundTruth(currentFile.getName(), currentLabel,
+                        (int) currBB.getX(), (int) currBB.getY(),
+                (int) currBB.getWidth(), (int) currBB.getHeight()));
+        LabelingStateContainer.rectangleList.add(currBB);
+        currBB =
+                addNewSlidingWindowRectangle(currBB.getX(), currBB.getY(),
+                        currBB.getWidth(), currBB.getHeight(),
                         Color.RED);
     }
 

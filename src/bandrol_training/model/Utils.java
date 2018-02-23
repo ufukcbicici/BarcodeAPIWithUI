@@ -49,6 +49,36 @@ public class Utils {
 
     }
 
+    public static double calculateIoU(Rect r0, Rect r1)
+    {
+        double left = Math.max(r0.x, r1.x);
+        double right = Math.min(r0.x + r0.width, r1.x + r1.width);
+        double bottom = Math.min(r0.y + r0.height, r1.y + r1.height);
+        double top = Math.max(r0.y, r1.y);
+
+        if(left < right && top < bottom)
+        {
+            double intersectionArea = (right - left) * (bottom - top);
+            double iou = intersectionArea /
+                    ((r0.width * r0.height) + (r1.width * r1.height) - intersectionArea);
+            return iou;
+        }
+        else
+            return 0.0;
+    }
+
+    public static double getMaxIoU(Rect r, List<Rect> rects)
+    {
+        double max_iou = 0.0;
+        for(Rect q : rects)
+        {
+            double iou = calculateIoU(r, q);
+            if(iou > max_iou)
+                max_iou = iou;
+        }
+        return max_iou;
+    }
+
     public static double getDistanceBetweenPoints(Point p0, Point p1)
     {
         double dist_x = p1.x - p0.x;

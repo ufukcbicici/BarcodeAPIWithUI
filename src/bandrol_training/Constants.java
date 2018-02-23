@@ -8,10 +8,11 @@ public class Constants {
     public static final int X = 0;
     public static final int Y = 1;
     public static final int Z = 2;
-    public static final String DEBUGPATH = "C:\\Users\\ufuk.bicici\\Desktop\\Bandrol\\DebugPics\\";
-    public static final String JSONPATH = "C:\\Users\\ufuk.bicici\\Desktop\\Bandrol\\Json Annotations\\";
-    public static final String LOCALIZED_IMAGE_PATH =
-            "C:\\Users\\ufuk.bicici\\Desktop\\Bandrol\\Localized Training Images\\";
+    private static final String ROOT_PATH = "C:\\Users\\ufuk.bicici\\Desktop\\Bandrol";
+    // public static final String ROOT_PATH = "C:\\Users\\ufuk.bicici\\Desktop\\Bandrol";
+    public static final String DEBUGPATH = ROOT_PATH + "\\DebugPics\\";
+    public static final String JSONPATH = ROOT_PATH + "\\Json Annotations\\";
+    public static final String LOCALIZED_IMAGE_PATH =  ROOT_PATH + "\\Localized Training Images\\";
     public static final double CHARACTER_LOC_GAUSSIAN_KERNEL = 1;
     public static final double DOWNSIZE_RATIO = 0.5;
     public static final double REFERENCE_IMAGE_WIDTH = 316;
