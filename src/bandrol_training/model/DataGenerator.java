@@ -15,18 +15,18 @@ import static bandrol_training.Constants.LOCALIZED_IMAGE_PATH;
 
 public class DataGenerator {
 
-    public static List<Mat> augmentSample(String fileName,
-                                     Mat sourceImage,
-                                     GroundTruth groundTruth,
-                                     double minRotationAngle,
-                                     double stepRotationAngle,
-                                     double maxRotationAngle,
-                                     double minHorizontalOffset,
-                                     double stepHorizontal,
-                                     double maxHorizontalOffset,
-                                     double minVerticalOffset,
-                                     double stepVertical,
-                                     double maxVerticalOffset)
+    public static List<GroundTruth> augmentSample(String fileName,
+                                                 Mat sourceImage,
+                                                 GroundTruth groundTruth,
+                                                 double minRotationAngle,
+                                                 double stepRotationAngle,
+                                                 double maxRotationAngle,
+                                                 double minHorizontalOffset,
+                                                 double stepHorizontal,
+                                                 double maxHorizontalOffset,
+                                                 double minVerticalOffset,
+                                                 double stepVertical,
+                                                 double maxVerticalOffset)
     {
         Point imageCenter =
                 new Point((double)groundTruth.x + (double)groundTruth.width / 2.0,
@@ -36,7 +36,7 @@ public class DataGenerator {
                 stepHorizontal));
         Set<Double> verticalOffsets = new HashSet<>(Utils.rangeToList(minVerticalOffset, maxVerticalOffset, stepVertical));
         Set<List<Double>> cartesianProduct = Sets.cartesianProduct(rotationAngles, horizontalOffsets, verticalOffsets);
-        List<Mat> augmentedSamples = new ArrayList<>();
+        List<GroundTruth> augmentedGroundTruths = new ArrayList<>();
         for(List<Double> transformation : cartesianProduct)
         {
             double rotationAngle = transformation.get(0);
@@ -71,9 +71,14 @@ public class DataGenerator {
             String suitableFileName = Utils.getNonExistingFileName(LOCALIZED_IMAGE_PATH + sampleName,
                     ".png");
             Imgcodecs.imwrite(suitableFileName, augmentedSample);
-            augmentedSamples.add(augmentedSample);
+            GroundTruth augmentedGroundTruth = new GroundTruth(groundTruth.fileName, groundTruth.label,
+                                                               groundTruth.x, groundTruth.y,
+                                                               groundTruth.width, groundTruth.height);
+            augmentedGroundTruth.setAugmentationParams(rotationAngle, verticalOffset, horizontalOffset);
+            augmentedGroundTruth.setImg(augmentedSample);
+            augmentedGroundTruths.add(augmentedGroundTruth);
         }
-        return augmentedSamples;
+        return augmentedGroundTruths;
     }
 
 }

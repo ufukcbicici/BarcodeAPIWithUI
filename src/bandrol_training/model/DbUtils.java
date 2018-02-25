@@ -32,7 +32,8 @@ public class DbUtils {
     {
         Connection conn = connect();
         String sql = "INSERT INTO "+Constants.HOG_TABLE+
-                "(FileName,Label,XCoord,YCoord,Width,Height,IoUWithClosestGT,HOGFeature) VALUES(?,?,?,?,?,?,?,?);";
+                "(FileName,Label,XCoord,YCoord,Width,Height,Rotation,VerticalDisplacement,HorizontalDisplacement," +
+                "IoUWithClosestGT,HOGFeature) VALUES(?,?,?,?,?,?,?,?,?,?,?);";
         try
         {
             assert conn != null;
@@ -46,8 +47,11 @@ public class DbUtils {
                 prep.setDouble(4, gt.y);
                 prep.setDouble(5, gt.width);
                 prep.setDouble(6, gt.height);
-                prep.setDouble(7, gt.iouWithClosestGroundTruth);
-                prep.setBytes(8, gt.getHogFeatureAsByteArr());
+                prep.setDouble(7, gt.rotation);
+                prep.setDouble(8, gt.verticalDisplacement);
+                prep.setDouble(9, gt.horizontalDisplacement);
+                prep.setDouble(10, gt.iouWithClosestGroundTruth);
+                prep.setBytes(11, gt.getHogFeatureAsByteArr());
                 prep.addBatch();
             }
             int[] updateCounts = prep.executeBatch();
@@ -60,10 +64,12 @@ public class DbUtils {
         }
     }
 
-    public static List<GroundTruth> readGroundTruths()
+    public static List<GroundTruth> readGroundTruths(String filterClause)
     {
         Connection conn = connect();
         String sql = "SELECT * FROM "+Constants.HOG_TABLE;
+        if(filterClause != null && !filterClause.isEmpty())
+            sql += " WHERE " + filterClause;
         List<GroundTruth> resultList = new ArrayList<>();
         try {
             assert conn != null;
@@ -78,9 +84,13 @@ public class DbUtils {
                 int yCoord = rs.getInt("YCoord");
                 int width = rs.getInt("Width");
                 int height = rs.getInt("Height");
+                double rotation = rs.getDouble("Rotation");
+                double verticalDisplacement = rs.getDouble("VerticalDisplacement");
+                double horizontalDisplacement = rs.getDouble("HorizontalDisplacement");
                 double iou = rs.getDouble("IoUWithClosestGT");
                 byte [] hogArr = rs.getBytes("HOGFeature");
                 GroundTruth gt = new GroundTruth(fileName, label, xCoord, yCoord, width, height, iou);
+                gt.setAugmentationParams(rotation, verticalDisplacement, horizontalDisplacement);
                 if(hogArr != null && hogArr.length > 0)
                 {
                     int featureDimension = hogArr.length / 8;

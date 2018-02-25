@@ -3,11 +3,10 @@ package bandrol_training.model;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import javafx.scene.control.Tab;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
+import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.HOGDescriptor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,6 +16,8 @@ import static bandrol_training.Constants.DEBUGPATH;
 
 public class HOGExtractor
 {
+    private static final int WINDOW_WIDTH = 40;
+    private static final int WINDOW_HEIGHT = 56;
     private static final int PATCH_SIZE = 8;
     private static final int BLOCK_SIZE = 16;
     private static final int BIN_COUNT = 9;
@@ -74,8 +75,8 @@ public class HOGExtractor
             Mat gradientYMat = new Mat(colorChannel.rows(), colorChannel.cols(), colorChannel.type());
             Imgproc.filter2D(colorChannel, gradientXMat, -1, kernelX);
             Imgproc.filter2D(colorChannel, gradientYMat, -1, kernelY);
-            System.out.println(Utils.testHorizontalGradient(colorChannel, gradientXMat));
-            System.out.println(Utils.testVerticalGradient(colorChannel, gradientYMat));
+//            System.out.println(Utils.testHorizontalGradient(colorChannel, gradientXMat));
+//            System.out.println(Utils.testVerticalGradient(colorChannel, gradientYMat));
 //            Mat gradientXMat8UC = Utils.convertGradientImageToGrayscale(gradientXMat);
 //            Mat gradientYMat8UC = Utils.convertGradientImageToGrayscale(gradientYMat);
 //            Imgcodecs.imwrite(DEBUGPATH + "gradX_"+i+".png", gradientXMat8UC);
@@ -241,13 +242,24 @@ public class HOGExtractor
         }
         // Get gradients
         Mat[] magnitudeAndAngles = getGradients(img);
-        for(Mat m : magnitudeAndAngles)
-            System.out.println(m.dump());
         // Get patch-wise gradient histograms, in a table.
         Table<Integer, Integer, Mat> histogramTable = getPatchTable(magnitudeAndAngles[0], magnitudeAndAngles[1]);
         // Apply block normalization and get the final HOG feature vector.
         Mat hogFeature = normalizeHistograms(histogramTable, magnitudeAndAngles[0].cols(), magnitudeAndAngles[1].rows());
         return hogFeature;
+    }
+
+    public static Mat extractOpenCVHogFeature(Mat img, int patch_width, int patch_height) {
+        Size windowSize = new Size(patch_width, patch_height);
+        Size blockSize = new Size(BLOCK_SIZE, BLOCK_SIZE);
+        Size blockStride = new Size(PATCH_SIZE,PATCH_SIZE);
+        Size cellSize = new Size(PATCH_SIZE,PATCH_SIZE);
+        int nbins = 9;
+        // Size _winSize, Size _blockSize, Size _blockStride, Size _cellSize, int _nbins
+        HOGDescriptor hogDescriptor = new HOGDescriptor(windowSize, blockSize, blockStride, cellSize, nbins);
+        MatOfFloat descriptors = new MatOfFloat();
+        hogDescriptor.compute(img, descriptors);
+        return descriptors;
     }
 
 

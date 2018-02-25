@@ -104,6 +104,16 @@ public class Controller {
     private Label sliding_window_y_lbl;
     @FXML
     private Label iou_lbl;
+    @FXML
+    private Label serial_num_label;
+    @FXML
+    private Button train_object_detectors_btn;
+    @FXML
+    private TextField max_iou_txt_fld;
+    @FXML
+    private Button detect_chars_btn;
+    @FXML
+    private TextField nms_iou_threshold_txt_fld;
 
     public Controller()
     {
@@ -207,10 +217,21 @@ public class Controller {
     }
 
     @FXML
+    public void detectCharacters(ActionEvent actionEvent)
+    {
+        double sliding_window_width = Double.parseDouble(sliding_window_width_tf.getText());
+        double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
+        Utils.compareCustomHOGvsOpenCVHOG(
+                LabelingStateContainer.sourceTrainingImg, (int) sliding_window_width, (int)sliding_window_height);
+    }
+
+    @FXML
     public void startAnnotation(ActionEvent actionEvent)
     {
         System.out.println(bandrol_imageview.getBoundsInParent());
         System.out.println(bandrol_imageview.getBoundsInLocal());
+        double sliding_window_width = Double.parseDouble(sliding_window_width_tf.getText());
+        double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
         // Step 1) Get data augmentation parameters
         double minRotationAngle = -Double.parseDouble(max_rotation_angle_tf.getText());
         double stepRotationAngle = Double.parseDouble(step_angle_tf.getText());
@@ -227,34 +248,32 @@ public class Controller {
         {
             GroundTruth gt = LabelingStateContainer.groundTruthMap.get(rect);
             System.out.println("Augmenting "+gt.toString());
-            List<Mat> augmentedImages =
-                    DataGenerator.augmentSample(currentFile.getName(),
-                        LabelingStateContainer.sourceTrainingImg, gt,
-                        minRotationAngle, stepRotationAngle, maxRotationAngle,
-                        minHorizontalOffset, stepHorizontal, maxHorizontalOffset,
-                        minVerticalOffset, stepVertical, maxVerticalOffset);
+            augmentedGroundTruths.addAll(DataGenerator.augmentSample(
+                    currentFile.getName(),
+                    LabelingStateContainer.sourceTrainingImg, gt,
+                    minRotationAngle, stepRotationAngle, maxRotationAngle,
+                    minHorizontalOffset, stepHorizontal, maxHorizontalOffset,
+                    minVerticalOffset, stepVertical, maxVerticalOffset));
             System.out.println("Extracting HOG Features for "+gt.toString());
-            for(Mat augmentedImage : augmentedImages)
+            for(GroundTruth augmentedGt : augmentedGroundTruths)
             {
                 try
                 {
-                    GroundTruth augmentedGroundTruth = new GroundTruth(gt.fileName, gt.label, gt.x, gt.y,
-                            gt.width, gt.height);
-                    Mat hogFeature = HOGExtractor.extractHOGFeature(augmentedImage);
-                    augmentedGroundTruth.setHogFeature(hogFeature);
-                    augmentedGroundTruths.add(augmentedGroundTruth);
+                    Mat hogFeature = HOGExtractor.extractOpenCVHogFeature(augmentedGt.getImg(),
+                            (int)sliding_window_width, (int)sliding_window_height);
+                    // Mat hogFeatureOpenCV = HOGExtractor.extractOpenCVHogFeature(augmentedGt.getImg());
+                    augmentedGt.setHogFeature(hogFeature);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
+        System.out.println("There are "+augmentedGroundTruths.size()+" ground truths.");
         System.out.println("Writing to DB.");
         DbUtils.writeGroundTruth(augmentedGroundTruths);
         // Step 3) Negative mining: Traverse all potential windows on the image, measure their IoUs with the closest
         // ground truth and record them as potential negative samples. We are going to use the samples with an IoU against
         // the nearest ground truth objects as negative samples for our object detector then.
-        double sliding_window_width = Double.parseDouble(sliding_window_width_tf.getText());
-        double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
         List<GroundTruth> negativeList = new ArrayList<>();
         for(int i=0;i<LabelingStateContainer.sourceTrainingImg.rows();i++)
         {
@@ -274,7 +293,8 @@ public class Controller {
                                         j, j + (int)sliding_window_width);
                 try
                 {
-                    Mat hogFeature = HOGExtractor.extractHOGFeature(imgRect);
+                    Mat hogFeature = HOGExtractor.extractOpenCVHogFeature(imgRect,
+                            (int)sliding_window_width, (int)sliding_window_height);
                     negativeSample.setHogFeature(hogFeature);
                     negativeList.add(negativeSample);
                 } catch (Exception e)
@@ -284,8 +304,24 @@ public class Controller {
 
             }
         }
+        System.out.println("There are "+negativeList.size()+" negative samples.");
         System.out.println("Writing to DB.");
         DbUtils.writeGroundTruth(negativeList);
+        System.out.println("Successfully Completed.");
+    }
+
+    @FXML
+    public void onTrainObjectDetectors(ActionEvent actionEvent)
+    {
+        double sliding_window_width = Double.parseDouble(sliding_window_width_tf.getText());
+        double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
+        double max_iou = Double.parseDouble(max_iou_txt_fld.getText());
+        ObjectDetector.train(max_iou);
+        ObjectDetector.detectObjects(
+                LabelingStateContainer.sourceTrainingImg,
+                (int)sliding_window_width,
+                (int)sliding_window_height,
+                Double.parseDouble(nms_iou_threshold_txt_fld.getText()));
     }
 
     @FXML
@@ -455,6 +491,7 @@ public class Controller {
     {
         // Get ground truth label
         String currentLabel = label_selection_cmbox.getSelectionModel().getSelectedItem();
+        serial_num_label.setText(serial_num_label.getText()+currentLabel);
         currBB.setStroke(Color.BLUE);
         LabelingStateContainer.groundTruthMap.put(
                 currBB, new GroundTruth(currentFile.getName(), currentLabel,
@@ -506,6 +543,7 @@ public class Controller {
         }
         listOfClickPoints = new ArrayList<>();
         listOfImagePoints = new ArrayList<>();
+        serial_num_label.setText("");
     }
 
     private Point2D convertFromImageViewToImageCoords(Point2D imageViewPoint)

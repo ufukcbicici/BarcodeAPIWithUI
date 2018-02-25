@@ -3,6 +3,7 @@ package bandrol_training.model;
 import org.opencv.core.*;
 import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.ml.StatModel;
 import org.opencv.utils.Converters;
 
 import javax.swing.*;
@@ -411,6 +412,57 @@ public class Utils {
         g2d.drawImage(tmp, 0, 0, null);
         g2d.dispose();
         return dimg;
+    }
+
+    public static List<Mat> compareCustomHOGvsOpenCVHOG(Mat img,int sliding_window_width,int sliding_window_height)
+    {
+        List<Mat> arr = new ArrayList<>();
+        // Custom
+        long t0 = System.nanoTime();
+        for(int i=0;i<img.rows();i++)
+        {
+            for(int j=0;j<img.cols();j++)
+            {
+                if(i + sliding_window_height - 1 >= img.rows())
+                    continue;
+                if(j + sliding_window_width - 1 >= img.cols())
+                    continue;
+                Mat imgRect = img.submat(i, i + sliding_window_height, j, j + sliding_window_width);
+                try
+                {
+                    Mat hogFeature = HOGExtractor.extractHOGFeature(imgRect);
+                    arr.add(hogFeature);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        long t1 = System.nanoTime();
+
+        // OpenCV
+        long t2 = System.nanoTime();
+        for(int i=0;i<img.rows();i++)
+        {
+            for(int j=0;j<img.cols();j++)
+            {
+                if(i + sliding_window_height - 1 >= img.rows())
+                    continue;
+                if(j + sliding_window_width - 1 >= img.cols())
+                    continue;
+                Mat imgRect = img.submat(i, i + sliding_window_height, j, j + sliding_window_width);
+                try
+                {
+                    Mat hogFeature = HOGExtractor.extractOpenCVHogFeature(imgRect,sliding_window_width,sliding_window_height);
+                    arr.add(hogFeature);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        long t3 = System.nanoTime();
+        System.out.println("Custom Time:"+(t1-t0));
+        System.out.println("OpenCV Time:"+(t3-t2));
+        return arr;
     }
 
     public static void drawLineOnMat(Mat src, Mat m0, Mat m1, Scalar color, int thickness)

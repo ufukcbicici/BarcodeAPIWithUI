@@ -13,10 +13,11 @@ public class Constants {
     public static final String DEBUGPATH = ROOT_PATH + "\\DebugPics\\";
     public static final String JSONPATH = ROOT_PATH + "\\Json Annotations\\";
     public static final String LOCALIZED_IMAGE_PATH =  ROOT_PATH + "\\Localized Training Images\\";
+    public static final String OBJECT_DETECTOR_FOLDER_PATH = ROOT_PATH + "\\Object Detector  SVMs\\";
     public static final double CHARACTER_LOC_GAUSSIAN_KERNEL = 1;
     public static final double DOWNSIZE_RATIO = 0.5;
-    public static final double REFERENCE_IMAGE_WIDTH = 316;
-    public static final double REFERENCE_IMAGE_HEIGHT = 217;
+//    public static final double REFERENCE_IMAGE_WIDTH = 316;
+//    public static final double REFERENCE_IMAGE_HEIGHT = 217;
     public static final Scalar CHROME_GREEN = new Scalar(0, 177, 64);
     //"jdbc:sqlite:C:/sqlite/db/chinook.db";
     public static final String CONNECTION_STRING =
