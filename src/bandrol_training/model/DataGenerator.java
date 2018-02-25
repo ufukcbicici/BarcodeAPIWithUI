@@ -11,12 +11,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static bandrol_training.Constants.DEBUGPATH;
 import static bandrol_training.Constants.LOCALIZED_IMAGE_PATH;
 
 public class DataGenerator {
 
-    public static void augmentSample(String fileName,
+    public static List<Mat> augmentSample(String fileName,
                                      Mat sourceImage,
                                      GroundTruth groundTruth,
                                      double minRotationAngle,
@@ -37,6 +36,7 @@ public class DataGenerator {
                 stepHorizontal));
         Set<Double> verticalOffsets = new HashSet<>(Utils.rangeToList(minVerticalOffset, maxVerticalOffset, stepVertical));
         Set<List<Double>> cartesianProduct = Sets.cartesianProduct(rotationAngles, horizontalOffsets, verticalOffsets);
+        List<Mat> augmentedSamples = new ArrayList<>();
         for(List<Double> transformation : cartesianProduct)
         {
             double rotationAngle = transformation.get(0);
@@ -71,51 +71,9 @@ public class DataGenerator {
             String suitableFileName = Utils.getNonExistingFileName(LOCALIZED_IMAGE_PATH + sampleName,
                     ".png");
             Imgcodecs.imwrite(suitableFileName, augmentedSample);
+            augmentedSamples.add(augmentedSample);
         }
-
-//        for(transformation : cartesianProduct)
-//        {
-//            double rotationAngle = transformation.get(0);
-//        }
-
-
-        // Affine Transformations
-        System.out.println("XXX");
-
-        // Sets.cartesianProduct()
-        // Affine Transformations
-//        double currAngle = minRotationAngle;
-//        while (currAngle < maxRotationAngle)
-//        {
-//            double currHorizontalOffset = minHorizontalOffset;
-//            while(currHorizontalOffset < maxHorizontalOffset)
-//            {
-//                double currVerticalOffset = minHorizontalOffset;
-//                while(currVerticalOffset < maxVerticalOffset)
-//                {
-//                    Mat rotationMatrix = Imgproc.getRotationMatrix2D(imageCenter, rotationAngle,1.0);
-//                    Mat rotatedImg = new Mat();
-//                    Imgproc.warpAffine(sourceImage, rotatedImg, rotationMatrix, new Size(sourceImage.cols(),
-//                            sourceImage.rows()));
-//                    double translation [] = {  1, 0, verticalTranslation, 0, 1, horizontalTranslation };
-//                    Mat translationMatrix = new Mat(2, 3, CvType.CV_64F);
-//                    translationMatrix.put(0,0, translation);
-//                    System.out.println(translationMatrix.dump());
-//                    Mat translatedImg = new Mat();
-//                    Imgproc.warpAffine(rotatedImg, translatedImg, translationMatrix, new Size(rotatedImg.cols(),
-//                            rotatedImg.rows()));
-//                    Mat augmentedSample = translatedImg.submat(groundTruth.x, groundTruth.x + groundTruth.width,
-//                            groundTruth.y, groundTruth.y + groundTruth.height);
-//                    System.out.println(augmentedSample.cols());
-//                    System.out.println(augmentedSample.rows());
-//                    Utils.showImageInPopup(Utils.matToBufferedImage(augmentedSample, null));
-//                    currVerticalOffset +=stepRotationAngle;
-//                }
-//                currHorizontalOffset +=stepHorizontal;
-//            }
-//            currAngle +=stepRotationAngle;
-//        }
-
+        return augmentedSamples;
     }
 
 }

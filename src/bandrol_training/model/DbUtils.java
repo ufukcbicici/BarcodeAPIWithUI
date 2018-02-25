@@ -1,11 +1,14 @@
 package bandrol_training.model;
 
 import bandrol_training.Constants;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class DbUtils {
@@ -28,8 +31,8 @@ public class DbUtils {
     public static void writeGroundTruth(List<GroundTruth> groundTruthList)
     {
         Connection conn = connect();
-        String sql = "INSERT INTO "+Constants.GROUND_TRUTH_TABLE+
-                "(FileName,Label,XCoord,YCoord,Width,Height) VALUES(?,?,?,?,?,?);";
+        String sql = "INSERT INTO "+Constants.HOG_TABLE+
+                "(FileName,Label,XCoord,YCoord,Width,Height,IoUWithClosestGT,HOGFeature) VALUES(?,?,?,?,?,?,?,?);";
         try
         {
             assert conn != null;
@@ -43,12 +46,60 @@ public class DbUtils {
                 prep.setDouble(4, gt.y);
                 prep.setDouble(5, gt.width);
                 prep.setDouble(6, gt.height);
+                prep.setDouble(7, gt.iouWithClosestGroundTruth);
+                prep.setBytes(8, gt.getHogFeatureAsByteArr());
                 prep.addBatch();
             }
             int[] updateCounts = prep.executeBatch();
+            int totalNumOfUpdates = Arrays.stream(updateCounts).sum();
+            if(totalNumOfUpdates != groundTruthList.size())
+                throw new SQLException("Number of updates do match!");
             conn.commit();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public static List<GroundTruth> readGroundTruths()
+    {
+        Connection conn = connect();
+        String sql = "SELECT * FROM "+Constants.HOG_TABLE;
+        List<GroundTruth> resultList = new ArrayList<>();
+        try {
+            assert conn != null;
+            Statement stmt  = conn.createStatement();
+            ResultSet rs    = stmt.executeQuery(sql);
+            while (rs.next())
+            {
+                //FileName,Label,XCoord,YCoord,Width,Height,IoUWithClosestGT,HOGFeature
+                String fileName = rs.getString("FileName");
+                String label = rs.getString("Label");
+                int xCoord = rs.getInt("XCoord");
+                int yCoord = rs.getInt("YCoord");
+                int width = rs.getInt("Width");
+                int height = rs.getInt("Height");
+                double iou = rs.getDouble("IoUWithClosestGT");
+                byte [] hogArr = rs.getBytes("HOGFeature");
+                GroundTruth gt = new GroundTruth(fileName, label, xCoord, yCoord, width, height, iou);
+                if(hogArr != null && hogArr.length > 0)
+                {
+                    int featureDimension = hogArr.length / 8;
+                    double [] doubleArr = new double[featureDimension];
+                    ByteBuffer bb = ByteBuffer.wrap(hogArr);
+                    for (int i = 0; i < featureDimension; i++)
+                    {
+                        doubleArr[i] = bb.getDouble();
+                    }
+                    Mat hogVector = new Mat(featureDimension, 1, CvType.CV_64F);
+                    hogVector.put(0,0, doubleArr);
+                    gt.setHogFeature(hogVector);
+                }
+                resultList.add(gt);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return resultList;
     }
 }

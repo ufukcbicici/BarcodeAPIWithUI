@@ -1,6 +1,9 @@
 package bandrol_training.model;
 
+import org.opencv.core.Mat;
 import org.opencv.core.Rect;
+
+import java.nio.ByteBuffer;
 
 public class GroundTruth implements java.io.Serializable
 {
@@ -11,6 +14,7 @@ public class GroundTruth implements java.io.Serializable
     public int width;
     public int height;
     public double iouWithClosestGroundTruth;
+    private Mat hogFeature;
 
     public GroundTruth(String fName, String l, int _x, int _y, int w, int h)
     {
@@ -37,5 +41,27 @@ public class GroundTruth implements java.io.Serializable
     public Rect getBoundingRect()
     {
         return new Rect(x, y, width, height);
+    }
+
+    public Mat getHogFeature() {
+        return hogFeature;
+    }
+
+    public void setHogFeature(Mat hogFeature) {
+        this.hogFeature = hogFeature;
+    }
+
+    public byte[] getHogFeatureAsByteArr()
+    {
+        ByteBuffer bb = ByteBuffer.allocate(hogFeature.cols() * hogFeature.rows() * 8);
+        for(int i=0;i<hogFeature.rows();i++)
+            bb.putDouble(hogFeature.get(i,0)[0]);
+        byte [] bArr = bb.array();
+        return bArr;
+    }
+
+    public String toString()
+    {
+        return "File:"+fileName+" "+"Label:"+label+" ("+x+","+y+") "+ " ("+width+","+height+")";
     }
 }

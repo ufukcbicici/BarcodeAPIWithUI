@@ -249,6 +249,72 @@ public class Utils {
         return f.exists() && !f.isDirectory();
     }
 
+    public static boolean testHorizontalGradient(Mat sourceImg, Mat gradImg)
+    {
+        for(int i=0;i<sourceImg.rows();i++)
+        {
+            for(int j=0;j<sourceImg.cols();j++)
+            {
+//                double x0 = (j == 0)?0.0:sourceImg.get(i,j-1)[0];
+//                double x1 = (j == sourceImg.cols()-1)?0.0:sourceImg.get(i,j+1)[0];
+//                double diff = x1 - x0;
+//                double diff_calc = gradImg.get(i,j)[0];
+//                if(Math.abs(diff - diff_calc) >= 10e-6 && j > 0 && j < sourceImg.cols()-1))
+//                    return false;
+                if(j == 0 || j == sourceImg.cols()-1)
+                    continue;
+                double x0 = sourceImg.get(i,j-1)[0];
+                double x1 = sourceImg.get(i,j+1)[0];
+                double diff = x1 - x0;
+                double diff_calc = gradImg.get(i,j)[0];
+                if(Math.abs(diff - diff_calc) >= 10e-6)
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean testVerticalGradient(Mat sourceImg, Mat gradImg)
+    {
+        for(int i=0;i<sourceImg.rows();i++)
+        {
+            for(int j=0;j<sourceImg.cols();j++)
+            {
+//                double y0 = (i == 0)?0.0:sourceImg.get(i-1,j)[0];
+//                double y1 = (j == sourceImg.rows()-1)?0.0:sourceImg.get(i+1,j)[0];
+//                double diff = y1 - y0;
+//                double diff_calc = gradImg.get(i,j)[0];
+//                if(Math.abs(diff - diff_calc) >= 10e-6)
+//                    return false;
+                if(i == 0 || i == sourceImg.rows()-1)
+                    continue;
+                double y0 = sourceImg.get(i-1,j)[0];
+                double y1 = sourceImg.get(i+1,j)[0];
+                double diff = y1 - y0;
+                double diff_calc = gradImg.get(i,j)[0];
+                if(Math.abs(diff - diff_calc) >= 10e-6)
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    public static Mat convertGradientImageToGrayscale(Mat grad)
+    {
+        Mat grayscale = grad.clone();
+        for(int i=0;i<grad.rows();i++)
+        {
+            for(int j=0;j<grad.cols();j++)
+            {
+                double scaled = 0.5*grad.get(i,j)[0] + 0.5;
+                grayscale.put(i,j,scaled);
+            }
+        }
+        Mat grayscaleUC = new Mat();
+        grayscale.convertTo(grayscaleUC, CvType.CV_8U, 255.0 );
+        return grayscaleUC;
+    }
+
     public static String getNonExistingFileName(String filePathString, String filePostFix)
     {
         String fileName = filePathString + filePostFix;

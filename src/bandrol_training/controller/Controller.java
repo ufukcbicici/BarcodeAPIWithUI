@@ -1,6 +1,7 @@
 package bandrol_training.controller;
 
 import bandrol_training.model.*;
+import bandrol_training.model.Algorithm;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -23,10 +24,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import org.opencv.core.Mat;
-import org.opencv.core.Point;
-import org.opencv.core.Rect;
-import org.opencv.core.Size;
+import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 
 import java.awt.image.BufferedImage;
@@ -205,6 +203,7 @@ public class Controller {
                 addNewSlidingWindowRectangle(0,0,sliding_window_width, sliding_window_height, Color.RED);
 
 
+
     }
 
     @FXML
@@ -212,9 +211,7 @@ public class Controller {
     {
         System.out.println(bandrol_imageview.getBoundsInParent());
         System.out.println(bandrol_imageview.getBoundsInLocal());
-        // Step 1) Write all ground truth boxes into the db
-        DbUtils.writeGroundTruth(new ArrayList<>(LabelingStateContainer.groundTruthMap.values()));
-        // Step 2) Create ground truth positive samples with proper data augmentation
+        // Step 1) Get data augmentation parameters
         double minRotationAngle = -Double.parseDouble(max_rotation_angle_tf.getText());
         double stepRotationAngle = Double.parseDouble(step_angle_tf.getText());
         double maxRotationAngle = -minRotationAngle;
@@ -224,46 +221,71 @@ public class Controller {
         double minVerticalOffset = -Double.parseDouble(max_vertical_offset_tf.getText());
         double stepVertical = Double.parseDouble(vertical_step_tf.getText());
         double maxVerticalOffset = -minVerticalOffset;
+        // Step 2) Create positive samples with data augmentation and extract HOG features for each augmented sample.
+        List<GroundTruth> augmentedGroundTruths = new ArrayList<>();
         for(Rectangle rect : LabelingStateContainer.groundTruthMap.keySet())
         {
             GroundTruth gt = LabelingStateContainer.groundTruthMap.get(rect);
-            DataGenerator.augmentSample(currentFile.getName(),
-                    LabelingStateContainer.sourceTrainingImg, gt,
-                    minRotationAngle, stepRotationAngle, maxRotationAngle,
-                    minHorizontalOffset, stepHorizontal, maxHorizontalOffset,
-                    minVerticalOffset, stepVertical, maxVerticalOffset);
+            System.out.println("Augmenting "+gt.toString());
+            List<Mat> augmentedImages =
+                    DataGenerator.augmentSample(currentFile.getName(),
+                        LabelingStateContainer.sourceTrainingImg, gt,
+                        minRotationAngle, stepRotationAngle, maxRotationAngle,
+                        minHorizontalOffset, stepHorizontal, maxHorizontalOffset,
+                        minVerticalOffset, stepVertical, maxVerticalOffset);
+            System.out.println("Extracting HOG Features for "+gt.toString());
+            for(Mat augmentedImage : augmentedImages)
+            {
+                try
+                {
+                    GroundTruth augmentedGroundTruth = new GroundTruth(gt.fileName, gt.label, gt.x, gt.y,
+                            gt.width, gt.height);
+                    Mat hogFeature = HOGExtractor.extractHOGFeature(augmentedImage);
+                    augmentedGroundTruth.setHogFeature(hogFeature);
+                    augmentedGroundTruths.add(augmentedGroundTruth);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         }
+        System.out.println("Writing to DB.");
+        DbUtils.writeGroundTruth(augmentedGroundTruths);
+        // Step 3) Negative mining: Traverse all potential windows on the image, measure their IoUs with the closest
+        // ground truth and record them as potential negative samples. We are going to use the samples with an IoU against
+        // the nearest ground truth objects as negative samples for our object detector then.
+        double sliding_window_width = Double.parseDouble(sliding_window_width_tf.getText());
+        double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
+        List<GroundTruth> negativeList = new ArrayList<>();
+        for(int i=0;i<LabelingStateContainer.sourceTrainingImg.rows();i++)
+        {
+            for(int j=0;j<LabelingStateContainer.sourceTrainingImg.cols();j++)
+            {
+                if(i + (int)sliding_window_height - 1 >= LabelingStateContainer.sourceTrainingImg.rows())
+                    continue;
+                if(j + (int)sliding_window_width - 1 >= LabelingStateContainer.sourceTrainingImg.cols())
+                    continue;
+                Rect negativeSampleRect = new Rect(j, i, (int)sliding_window_width, (int)sliding_window_height);
+                double max_iou = Utils.getMaxIoU(negativeSampleRect, LabelingStateContainer.groundTruthMap.values().stream().
+                                map(GroundTruth::getBoundingRect).collect(Collectors.toList()));
+                GroundTruth negativeSample = new GroundTruth(currentFile.getName(), "-1", j, i,
+                        (int)sliding_window_width, (int)sliding_window_height, max_iou);
+                Mat imgRect = LabelingStateContainer.sourceTrainingImg.submat(
+                                        i, i + (int)sliding_window_height,
+                                        j, j + (int)sliding_window_width);
+                try
+                {
+                    Mat hogFeature = HOGExtractor.extractHOGFeature(imgRect);
+                    negativeSample.setHogFeature(hogFeature);
+                    negativeList.add(negativeSample);
+                } catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
 
-
-        // Rotation angles
-//        List<Double> rotationAngles = new ArrayList<>();
-//        double minAngle = -15.0;
-//        double stepAngle = 0.25;
-//        double maxAngle = 15.0;
-//        double currAngle = minAngle;
-//        while (currAngle < maxAngle) {
-//            rotationAngles.add(currAngle);
-//            currAngle += stepAngle;
-//        }
-//        rotationAngles.toArray();
-//        // Translation amounts
-//        List<Double> verticalTranslation = new ArrayList<>();
-//        List<Double> horizontalTranslation = new ArrayList<>();
-//        double minOffset = -5.0;
-//        double stepOffset = 1.0;
-//        double maxOffset = 5.0;
-//
-//
-//
-//
-//        for(Rectangle rect : LabelingStateContainer.groundTruthMap.keySet())
-//        {
-////            GroundTruth gt = LabelingStateContainer.groundTruthMap.get(rect);
-////            DataGenerator.augmentSample(
-////                    LabelingStateContainer.sourceTrainingImg, gt, );
-//        }
-
-
+            }
+        }
+        System.out.println("Writing to DB.");
+        DbUtils.writeGroundTruth(negativeList);
     }
 
     @FXML
