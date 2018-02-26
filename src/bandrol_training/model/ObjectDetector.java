@@ -1,6 +1,6 @@
 package bandrol_training.model;
 
-import jdk.nashorn.api.tree.GotoTree;
+import bandrol_training.Constants;
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
@@ -9,10 +9,7 @@ import org.opencv.ml.ParamGrid;
 import org.opencv.ml.SVM;
 import org.opencv.ml.StatModel;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static bandrol_training.Constants.DEBUGPATH;
@@ -44,6 +41,10 @@ public class ObjectDetector {
     private static SVM preLoadedSvm = null;
     private static double positiveRatio = 0.2;
     private static double negativeRatio = 0.1;
+    private static Map<String, SVM> detectorMap;
+    static {
+        detectorMap = new HashMap<>();
+    }
 
     private static List<Detection> nonMaximaSuppression(List<Detection> preListOfDetections, double nms_iou_threshold)
     {
@@ -76,7 +77,7 @@ public class ObjectDetector {
         Mat resultImg = img.clone();
         SVM svm = null;
         if(preLoadedSvm==null)
-            svm = SVM.load(OBJECT_DETECTOR_FOLDER_PATH+"ObjectDetector");
+            svm = SVM.load(OBJECT_DETECTOR_FOLDER_PATH+"ObjectDetector_0");
         List<Detection> listOfDetections = new ArrayList<>();
         for(int i=0;i<img.rows();i++)
         {
@@ -124,6 +125,20 @@ public class ObjectDetector {
         Imgcodecs.imwrite(fileName, resultImg);
         Utils.showImageInPopup(Utils.matToBufferedImage(resultImg, null));
         return listOfDetections;
+    }
+
+    public void loadDetectors()
+    {
+        for(String label : Constants.LABELS)
+        {
+            String detectorPath = OBJECT_DETECTOR_FOLDER_PATH+"ObjectDetector_"+label;
+            boolean doesDetectorExist =
+                    Utils.checkFileExist(detectorPath);
+            if(!doesDetectorExist)
+                continue;
+            SVM labelDetector = SVM.load(detectorPath);
+            detectorMap.put(label, labelDetector);
+        }
     }
 
     public static void train(double negativeMaxIoU)
@@ -202,4 +217,5 @@ public class ObjectDetector {
         preLoadedSvm = svm;
         // Utils.getNonExistingFileName(OBJECT_DETECTOR_FOLDER_PATH, )
     }
+
 }

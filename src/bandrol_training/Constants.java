@@ -2,6 +2,10 @@ package bandrol_training;
 
 import org.opencv.core.Scalar;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class Constants {
     public static final int WIDTH = 1000;
     public static final int HEIGHT = 600;
@@ -25,4 +29,12 @@ public class Constants {
             "jdbc:sqlite:C:/Users/ufuk.bicici/Desktop/Bandrol/bandrol.db";
     public static final String GROUND_TRUTH_TABLE = "BANDROL_GROUND_TRUTHS";
     public static final String HOG_TABLE = "HOG_FEATURES";
+
+
+    public static final List<String> LABELS;
+    static {
+        LABELS = new ArrayList<>(Arrays.asList("A","B","C","D","E","F","G","H","I","J","K",
+                "L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
+                "0","1","2","3","4","5","6","7","8","9"));
+    }
 }
