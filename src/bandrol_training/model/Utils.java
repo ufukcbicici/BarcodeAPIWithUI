@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Utils {
     public static Rect2d getTightestBoundingRectangle(List<Point> points)
@@ -40,6 +41,16 @@ public class Utils {
     public static BufferedImage cropImage(BufferedImage img, Rect2d cropArea)
     {
         return img.getSubimage((int)cropArea.x, (int)cropArea.y, (int)cropArea.width, (int)cropArea.height);
+    }
+
+    public static Mat getFeatureMatrixFromGroundTruths(List<GroundTruth> groundTruthList)
+    {
+        List<Mat> classFeatures = groundTruthList.stream().map(GroundTruth::getHogFeature).collect(Collectors.toList());
+        Mat classFeaturesCombined = new Mat();
+        Mat classFeaturesCombinedT = new Mat();
+        Core.hconcat(classFeatures, classFeaturesCombinedT);
+        Core.transpose(classFeaturesCombinedT, classFeaturesCombined);
+        return classFeaturesCombined;
     }
 
     public static void showImageInPopup(BufferedImage img)

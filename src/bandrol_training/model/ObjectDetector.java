@@ -39,8 +39,8 @@ class Detection
 public class ObjectDetector {
     // private static double negativeMaxIoU = 0.8;
     private static SVM preLoadedSvm = null;
-    private static double positiveRatio = 0.2;
-    private static double negativeRatio = 0.1;
+    private static double positiveRatio = 0.1;
+    private static double negativeRatio = 0.05;
     private static Map<String, SVM> detectorMap;
     static {
         detectorMap = new HashMap<>();
@@ -77,7 +77,7 @@ public class ObjectDetector {
         Mat resultImg = img.clone();
         SVM svm = null;
         if(preLoadedSvm==null)
-            svm = SVM.load(OBJECT_DETECTOR_FOLDER_PATH+"ObjectDetector_0");
+            svm = SVM.load(OBJECT_DETECTOR_FOLDER_PATH+"ObjectDetector");
         List<Detection> listOfDetections = new ArrayList<>();
         for(int i=0;i<img.rows();i++)
         {
@@ -217,5 +217,4 @@ public class ObjectDetector {
         preLoadedSvm = svm;
         // Utils.getNonExistingFileName(OBJECT_DETECTOR_FOLDER_PATH, )
     }
-
 }
