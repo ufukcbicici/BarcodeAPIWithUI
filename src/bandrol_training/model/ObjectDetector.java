@@ -118,10 +118,11 @@ public class ObjectDetector {
             Rect r = dtc.getRect();
             Imgproc.rectangle(resultImg, new Point(r.x,r.y),
                 new Point(r.x + r.width - 1, r.y + r.height - 1),
-                new Scalar(255,0,0));
+                new Scalar(0,0,255));
         }
         String fileName = Utils.getNonExistingFileName(DETECTIONPATH+"detection_result.png", ".png");
         Imgcodecs.imwrite(fileName, resultImg);
+        Utils.showImageInPopup(Utils.matToBufferedImage(resultImg, null));
         return listOfDetections;
     }
 
