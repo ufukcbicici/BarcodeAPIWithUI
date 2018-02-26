@@ -23,7 +23,7 @@
 
 <BorderPane maxHeight="-1.0" maxWidth="-1.0" minHeight="-1.0" minWidth="-1.0" onKeyPressed="#onKeyReleased" prefHeight="640.0" prefWidth="1200.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/2.2" fx:controller="bandrol_training.controller.Controller">
   <bottom>
-    <GridPane prefHeight="58.0" prefWidth="640.0">
+    <GridPane prefHeight="100.0" prefWidth="640.0">
       <children>
         <Button fx:id="open_image_btn" mnemonicParsing="false" onAction="#openImage" prefHeight="30.0" prefWidth="121.0" text="Open Image" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
         <Button fx:id="execute_pipeline_btn" minHeight="19.0" mnemonicParsing="false" onAction="#executePipeline" prefHeight="27.0" prefWidth="146.0" text="Execute Pipeline" GridPane.columnIndex="5" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
@@ -51,7 +51,7 @@
             <GridPane prefHeight="27.0" GridPane.columnIndex="0" GridPane.rowIndex="0">
               <children>
                 <Label text="Max IoU" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
-                <TextField fx:id="max_iou_txt_fld" prefWidth="200.0" text="0.7" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                <TextField fx:id="max_iou_txt_fld" prefWidth="200.0" text="0.85" GridPane.columnIndex="1" GridPane.rowIndex="0" />
               </children>
               <columnConstraints>
                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -70,19 +70,22 @@
             <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
           </rowConstraints>
         </GridPane>
-        <GridPane GridPane.columnIndex="4" GridPane.rowIndex="0">
+        <GridPane prefHeight="72.0" prefWidth="200.0" GridPane.columnIndex="4" GridPane.rowIndex="0">
           <children>
             <Button id="detect_chars" fx:id="detect_chars_btn" minHeight="16.0" mnemonicParsing="false" onAction="#detectCharacters" prefHeight="22.0" prefWidth="121.0" text="Detect Characters" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
             <GridPane GridPane.columnIndex="0" GridPane.rowIndex="0">
               <children>
                 <Label text="NMS IoU" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
                 <TextField fx:id="nms_iou_threshold_txt_fld" prefWidth="200.0" text="0.5" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                <Label text="Object Sign" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
+                <TextField fx:id="object_sign_txt_field" prefWidth="200.0" text="-1" GridPane.columnIndex="1" GridPane.rowIndex="1" />
               </children>
               <columnConstraints>
                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
               </columnConstraints>
               <rowConstraints>
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                 <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
               </rowConstraints>
             </GridPane>

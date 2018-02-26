@@ -11,6 +11,7 @@ public class Constants {
     private static final String ROOT_PATH = "C:\\Users\\ufuk.bicici\\Desktop\\Bandrol";
     // public static final String ROOT_PATH = "C:\\Users\\ufuk.bicici\\Desktop\\Bandrol";
     public static final String DEBUGPATH = ROOT_PATH + "\\DebugPics\\";
+    public static final String DETECTIONPATH = ROOT_PATH + "\\Detections\\";
     public static final String JSONPATH = ROOT_PATH + "\\Json Annotations\\";
     public static final String LOCALIZED_IMAGE_PATH =  ROOT_PATH + "\\Localized Training Images\\";
     public static final String OBJECT_DETECTOR_FOLDER_PATH = ROOT_PATH + "\\Object Detector  SVMs\\";

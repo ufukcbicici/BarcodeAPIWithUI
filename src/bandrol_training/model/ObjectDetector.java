@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static bandrol_training.Constants.DEBUGPATH;
+import static bandrol_training.Constants.DETECTIONPATH;
 import static bandrol_training.Constants.OBJECT_DETECTOR_FOLDER_PATH;
 
 class Detection
@@ -66,22 +67,20 @@ public class ObjectDetector {
 
     public static List<Detection> detectObjects(Mat img,
                                                 int sliding_window_width, int sliding_window_height,
-                                                double nms_iou_threshold)
+                                                double nms_iou_threshold, double object_sign)
     {
         Mat resultImg = img.clone();
-        SVM svm;
+        SVM svm = null;
         if(preLoadedSvm==null)
             svm = SVM.load(OBJECT_DETECTOR_FOLDER_PATH+"ObjectDetector");
-        else
-            svm = preLoadedSvm;
         List<Detection> listOfDetections = new ArrayList<>();
         for(int i=0;i<img.rows();i++)
         {
             for(int j=0;j<img.cols();j++)
             {
-                if(i + (int)sliding_window_height - 1 >= img.rows())
+                if(i + sliding_window_height - 1 >= img.rows())
                     continue;
-                if(j + (int)sliding_window_width - 1 >= img.cols())
+                if(j + sliding_window_width - 1 >= img.cols())
                     continue;
                 Mat imgRect = img.submat(i, i + sliding_window_height, j, j + sliding_window_width);
                 Mat hogFeature = HOGExtractor.extractOpenCVHogFeature(imgRect, sliding_window_width,
@@ -92,8 +91,16 @@ public class ObjectDetector {
                 hogFeatureT.convertTo(hog32f, CvType.CV_32F);
                 Mat response = new Mat();
                 svm.predict(hog32f, response, StatModel.RAW_OUTPUT);
+//                svm.predict(hog32f, response, 0);
+//                if(response.get(0,0)[0] == 1)
+//                {
+//                    //Utils.drawLineOnMat(resultImg, up0, up1, new Scalar(255,255,0), 1);
+//                    Imgproc.rectangle(resultImg, new Point(j,i),
+//                            new Point(j+sliding_window_width - 1, i + (int)sliding_window_height - 1),
+//                            new Scalar(255,255,0));
+//                }
                 double signedDistance = response.get(0,0)[0];
-                if(signedDistance < 0)
+                if(object_sign*signedDistance > 0)
                 {
                     Detection detection = new Detection(
                             new Rect(j,i,sliding_window_width,sliding_window_height), -signedDistance);
@@ -107,17 +114,20 @@ public class ObjectDetector {
             Rect r = dtc.getRect();
             Imgproc.rectangle(resultImg, new Point(r.x,r.y),
                 new Point(r.x + r.width - 1, r.y + r.height - 1),
-                new Scalar(255,255,0));
+                new Scalar(255,0,0));
         }
-        Imgcodecs.imwrite(DEBUGPATH+"detection_result.png", resultImg);
-        return maxima;
+        String fileName = Utils.getNonExistingFileName(DETECTIONPATH+"detection_result.png", ".png");
+        Imgcodecs.imwrite(fileName, resultImg);
+        return listOfDetections;
     }
 
     public static void train(double negativeMaxIoU)
     {
-        List<GroundTruth> positiveSamples = DbUtils.readGroundTruths("Label != -1");
+        List<GroundTruth> positiveSamples = DbUtils.readGroundTruths("Label = 0");
+//        List<GroundTruth> negativeSamples = DbUtils.readGroundTruths(
+//                "Label != 0 AND IoUWithClosestGT < "+negativeMaxIoU);
         List<GroundTruth> negativeSamples = DbUtils.readGroundTruths(
-                "Label == -1 AND IoUWithClosestGT < "+negativeMaxIoU);
+                "(Label = -1 AND IoUWithClosestGT < "+negativeMaxIoU+") OR (Label NOT IN (0,-1))" );
         //List<GroundTruth> negativeSamples = DbUtils.readGroundTruths("Label == -1 AND IoUWithClosestGT < "+negativeMaxIoU);
         System.out.println(positiveSamples.size());
         System.out.println(negativeSamples.size());

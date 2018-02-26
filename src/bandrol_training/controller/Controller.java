@@ -114,6 +114,8 @@ public class Controller {
     private Button detect_chars_btn;
     @FXML
     private TextField nms_iou_threshold_txt_fld;
+    @FXML
+    private TextField object_sign_txt_field;
 
     public Controller()
     {
@@ -221,8 +223,13 @@ public class Controller {
     {
         double sliding_window_width = Double.parseDouble(sliding_window_width_tf.getText());
         double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
-        Utils.compareCustomHOGvsOpenCVHOG(
-                LabelingStateContainer.sourceTrainingImg, (int) sliding_window_width, (int)sliding_window_height);
+
+        ObjectDetector.detectObjects(
+                LabelingStateContainer.sourceTrainingImg,
+                (int)sliding_window_width,
+                (int)sliding_window_height,
+                Double.parseDouble(nms_iou_threshold_txt_fld.getText()),
+                Double.parseDouble(object_sign_txt_field.getText()));
     }
 
     @FXML
@@ -317,11 +324,6 @@ public class Controller {
         double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
         double max_iou = Double.parseDouble(max_iou_txt_fld.getText());
         ObjectDetector.train(max_iou);
-        ObjectDetector.detectObjects(
-                LabelingStateContainer.sourceTrainingImg,
-                (int)sliding_window_width,
-                (int)sliding_window_height,
-                Double.parseDouble(nms_iou_threshold_txt_fld.getText()));
     }
 
     @FXML
