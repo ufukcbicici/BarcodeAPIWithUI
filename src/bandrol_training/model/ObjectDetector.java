@@ -1,5 +1,6 @@
 package bandrol_training.model;
 
+import jdk.nashorn.api.tree.GotoTree;
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
@@ -9,6 +10,7 @@ import org.opencv.ml.SVM;
 import org.opencv.ml.StatModel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,6 +42,8 @@ class Detection
 public class ObjectDetector {
     // private static double negativeMaxIoU = 0.8;
     private static SVM preLoadedSvm = null;
+    private static double positiveRatio = 0.2;
+    private static double negativeRatio = 0.1;
 
     private static List<Detection> nonMaximaSuppression(List<Detection> preListOfDetections, double nms_iou_threshold)
     {
@@ -132,30 +136,42 @@ public class ObjectDetector {
         System.out.println(positiveSamples.size());
         System.out.println(negativeSamples.size());
 
+        // Sample
+        int positiveSampleCount = (int)Math.round((double)positiveSamples.size() * positiveRatio);
+        int negativeSampleCount = (int)Math.round((double)negativeSamples.size() * negativeRatio);
+        System.out.println(positiveSampleCount);
+        System.out.println(negativeSampleCount);
+        Collections.shuffle(positiveSamples);
+        Collections.shuffle(negativeSamples);
+        List<GroundTruth> positiveSubset = positiveSamples.subList(0, positiveSampleCount);
+        List<GroundTruth> negativeSubset = negativeSamples.subList(0, negativeSampleCount);
+        System.out.println(positiveSubset.size());
+        System.out.println(negativeSubset.size());
+
         SVM svm = SVM.create();
         TermCriteria terminationCriteria = new TermCriteria(TermCriteria.COUNT + TermCriteria.EPS,
                 1000, 1e-3 );
         svm.setKernel(SVM.LINEAR);
 
         // Prepare the training set
-        int totalSampleCount = positiveSamples.size() + negativeSamples.size();
-        int featureDim = positiveSamples.get(0).getHogFeature().rows();
+        int totalSampleCount = positiveSubset.size() + negativeSubset.size();
+        int featureDim = negativeSubset.get(0).getHogFeature().rows();
         Mat trainingSamples = new Mat(totalSampleCount, featureDim, CvType.CV_64F);
         Mat labelMat = new Mat(totalSampleCount, 1, CvType. CV_32SC1);
         int [] labelArr = new int[totalSampleCount];
         List<Mat> transposeFeatures = new ArrayList<>();
-        for(int i=0;i<positiveSamples.size();i++)
+        for(int i=0;i<positiveSubset.size();i++)
         {
             labelArr[i] = 1;
-            Mat hogFeature = positiveSamples.get(i).getHogFeature();
+            Mat hogFeature = positiveSubset.get(i).getHogFeature();
             Mat hogFeatureT = new Mat();
             Core.transpose(hogFeature, hogFeatureT);
             transposeFeatures.add(hogFeatureT);
         }
-        for(int i=0;i<negativeSamples.size();i++)
+        for(int i=0;i<negativeSubset.size();i++)
         {
-            labelArr[positiveSamples.size()+i] = -1;
-            Mat hogFeature = negativeSamples.get(i).getHogFeature();
+            labelArr[positiveSubset.size()+i] = -1;
+            Mat hogFeature = negativeSubset.get(i).getHogFeature();
             Mat hogFeatureT = new Mat();
             Core.transpose(hogFeature, hogFeatureT);
             transposeFeatures.add(hogFeatureT);
