@@ -25,6 +25,11 @@ public class SVMEnsemble {
         this.svmList = svmList;
     }
 
+    public List<SVM> getSvmList()
+    {
+        return svmList;
+    }
+
     public void add(SVM svm)
     {
         svmList.add(svm);
@@ -34,21 +39,21 @@ public class SVMEnsemble {
     {
         //svm.predict(hog32f, response, StatModel.RAW_OUTPUT);
         Mat voteTable = Mat.zeros(samples.rows(), Constants.LABELS.size(), CvType.CV_32S);
-        for(SVM svm : svmList)
-        {
+        for(SVM svm : svmList) {
             Mat responses = new Mat();
             svm.predict(samples, responses, 0);
             for(int i=0;i<responses.rows();i++)
             {
-                int responseLabel = (int)responses.get(0,0)[0];
+                int responseLabel = (int)responses.get(i,0)[0];
                 int labelVoteCount = (int)voteTable.get(i, responseLabel)[0];
                 voteTable.put(i, responseLabel, labelVoteCount+1);
             }
+
         }
         Mat finalResponses = new Mat(samples.rows(), 1, CvType.CV_32S);
         for(int i=0;i<samples.rows();i++)
         {
-            Core.MinMaxLocResult minMaxLocResult = Core.minMaxLoc(samples.row(i));
+            Core.MinMaxLocResult minMaxLocResult = Core.minMaxLoc(voteTable.row(i));
             int label = (int)minMaxLocResult.maxLoc.x;
             finalResponses.put(i, 0, label);
         }

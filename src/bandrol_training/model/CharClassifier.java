@@ -14,7 +14,8 @@ import java.util.stream.Collectors;
 
 public class CharClassifier
 {
-    public static SVMEnsemble train(int ensembleCount, double sampleRatio, double minNumOfSamplesPerClass, double validationRatio)
+    public static SVMEnsemble train(int ensembleCount, double sampleRatio, double minNumOfSamplesPerClass,
+                                    double validationRatio)
     {
         String inclusionStatement = "FileName IN" + Utils.getFileSelectionClause();
         String exlusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
@@ -41,6 +42,7 @@ public class CharClassifier
         SVMEnsemble svmEnsemble = new SVMEnsemble();
         for(int currEnsembleIndex = 0; currEnsembleIndex < ensembleCount; currEnsembleIndex++)
         {
+            System.out.println("***********SVM "+currEnsembleIndex+"***********");
             List<Mat> sampleMatrices = new ArrayList<>();
             List<Mat> labels = new ArrayList<>();
             // Pick samples from each class
@@ -68,7 +70,8 @@ public class CharClassifier
             Core.vconcat(labels, totalLabelMatrix);
             // Train SVM
             ParamGrid C_grid = SVM.getDefaultGridPtr(SVM.C);
-            ParamGrid gamma_grid = ParamGrid.create(0, 0,0);
+            // ParamGrid gamma_grid = ParamGrid.create(0, 0,0);
+            ParamGrid gamma_grid = SVM.getDefaultGridPtr(SVM.GAMMA);
             ParamGrid p_grid = ParamGrid.create(0, 0,0);
             ParamGrid nu_grid = ParamGrid.create(0, 0,0);
             ParamGrid coeff_grid = ParamGrid.create(0, 0,0);
@@ -76,7 +79,7 @@ public class CharClassifier
             SVM svm = SVM.create();
 //            TermCriteria terminationCriteria = new TermCriteria(TermCriteria.COUNT + TermCriteria.EPS,
 //                    1000, 1e-3 );
-            svm.setKernel(SVM.LINEAR);
+            svm.setKernel(SVM.RBF);
             System.out.println("Training "+currEnsembleIndex+". SVM of the ensemble.");
             Mat totalSampleMatrixFloat = new Mat();
             totalSampleMatrix.convertTo(totalSampleMatrixFloat, CvType.CV_32F);
@@ -90,13 +93,20 @@ public class CharClassifier
             double trainingAccuracy = predict(svm, trainingSet, targetLabels);
             System.out.println("Training Accuracy:"+trainingAccuracy);
             //Measure validation set performance
-            double validationAccuracy = predict(svm, validationSet, targetLabels);
-            System.out.println("Validation Accuracy:"+validationAccuracy);
+            if(validationSet.size() > 0)
+            {
+                double validationAccuracy = predict(svm, validationSet, targetLabels);
+                System.out.println("Validation Accuracy:"+validationAccuracy);
+            }
             //Measure test set performance
             double testAccuracy = predict(svm, allTestSamples, targetLabels);
             System.out.println("Test Accuracy:"+testAccuracy);
+            System.out.println("***********SVM "+currEnsembleIndex+"***********");
         }
-        //predict(svmEnsemble, validationSet);
+        predict(svmEnsemble, trainingSet);
+        if(validationSet.size() > 0)
+            predict(svmEnsemble, validationSet);
+        predict(svmEnsemble, allTestSamples);
         return svmEnsemble;
     }
 
@@ -104,13 +114,15 @@ public class CharClassifier
     {
         List<GroundTruth> filteredList = predictionList.stream().filter(
                 gt -> targetLabels.contains(gt.label)).collect(Collectors.toList());
-        Mat featureMatrix = new Mat(0, filteredList.get(0).getHogFeature().rows(), CvType.CV_64F);
-        for (GroundTruth gt : filteredList)
-        {
-            Mat hogFeatureT = new Mat();
-            Core.transpose(gt.getHogFeature(), hogFeatureT);
-            featureMatrix.push_back(hogFeatureT);
-        }
+//        Mat featureMatrix = new Mat(0, filteredList.get(0).getHogFeature().rows(), CvType.CV_64F);
+//        for (int i=0;i<predictionList.size();i++)
+//        {
+//            GroundTruth gt = predictionList.get(i);
+//            Mat hogFeatureT = new Mat();
+//            Core.transpose(gt.getHogFeature(), hogFeatureT);
+//            featureMatrix.push_back(hogFeatureT);
+//        }
+        Mat featureMatrix = Utils.getFeatureMatrixFromGroundTruths(predictionList);
         Mat featureMatrixF = new Mat();
         featureMatrix.convertTo(featureMatrixF, CvType.CV_32F);
         Mat validationResponses = new Mat();
@@ -127,11 +139,21 @@ public class CharClassifier
 
     public static void predict(SVMEnsemble ensemble, List<GroundTruth> predictionList)
     {
-//        Mat featureMatrix = Utils.getFeatureMatrixFromGroundTruths(predictionList);
-//        Mat featureMatrixFloat = new Mat();
-//        featureMatrix.convertTo(featureMatrixFloat, CvType.CV_32F);
-//
-//        // Mat responses = ensemble.predictByVoting(featureMatrixFloat);
+        Mat featureMatrix = Utils.getFeatureMatrixFromGroundTruths(predictionList);
+        Mat featureMatrixFloat = new Mat();
+        featureMatrix.convertTo(featureMatrixFloat, CvType.CV_32F);
+//        Mat validationResponses = new Mat();
+//        ensemble.getSvmList().get(0).predict(featureMatrixFloat, validationResponses, 0);
+        Mat responses = ensemble.predictByVoting(featureMatrixFloat);
+        int totalCorrectCount = 0;
+        for(int i=0;i<predictionList.size();i++)
+        {
+            int trueLabel = Constants.CHAR_TO_LABEL_MAP.get(predictionList.get(i).label);
+            if(trueLabel == responses.get(i,0)[0])
+                totalCorrectCount++;
+        }
+
+//        Mat responses = ensemble.predictByVoting(featureMatrixFloat);
 //        int totalCorrectCount = 0;
 //        for(int i=0;i<predictionList.size();i++)
 //        {
@@ -140,8 +162,8 @@ public class CharClassifier
 //            if(inferredLabel == trueLabel)
 //                totalCorrectCount++;
 //        }
-//        System.out.println("Total Samples:"+predictionList.size());
-//        System.out.println("Total Correct Count:"+totalCorrectCount);
-//        System.out.println("Accuracy:"+(double)totalCorrectCount / (double)predictionList.size());
+        System.out.println("Total Samples:"+predictionList.size());
+        System.out.println("Total Correct Count:"+totalCorrectCount);
+        System.out.println("Accuracy:"+(double)totalCorrectCount / (double)predictionList.size());
     }
 }

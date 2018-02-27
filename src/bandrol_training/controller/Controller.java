@@ -322,7 +322,7 @@ public class Controller {
     @FXML
     public void onCharClassifier(ActionEvent actionEvent)
     {
-        CharClassifier.train(1, 0.1,0, 0.1);
+        CharClassifier.train(3, 0.01,0, 0.0);
     }
 
     @FXML
