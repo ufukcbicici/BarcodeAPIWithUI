@@ -16,14 +16,20 @@ public class CharClassifier
 {
     public static SVMEnsemble train(int ensembleCount, double sampleRatio, double minNumOfSamplesPerClass, double validationRatio)
     {
-        List<GroundTruth> allSamples = DbUtils.readGroundTruths("Label != -1");
-        System.out.println(allSamples.size());
-        Collections.shuffle(allSamples);
-        int trainingSetSize = (int)(allSamples.size() * (1.0-validationRatio));
-        List<GroundTruth> trainingSet = allSamples.subList(0,trainingSetSize);
-        List<GroundTruth> validationSet = allSamples.subList(trainingSetSize, allSamples.size());
-        System.out.println(trainingSet.size());
-        System.out.println(validationSet.size());
+        String inclusionStatement = "FileName IN" + Utils.getFileSelectionClause();
+        String exlusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
+        String includeClause = Utils.getFilterClause("Label != -1", inclusionStatement);
+        String excludeClause = Utils.getFilterClause("Label != -1", exlusionStatement);
+        List<GroundTruth> allTrainingSamples = DbUtils.readGroundTruths(excludeClause);
+        List<GroundTruth> allTestSamples = DbUtils.readGroundTruths(includeClause);
+        System.out.println("All Training Samples:" + allTrainingSamples.size());
+        System.out.println("Test Set:" + allTestSamples.size());
+        Collections.shuffle(allTrainingSamples);
+        int trainingSetSize = (int)(allTrainingSamples.size() * (1.0-validationRatio));
+        List<GroundTruth> trainingSet = allTrainingSamples.subList(0,trainingSetSize);
+        List<GroundTruth> validationSet = allTrainingSamples.subList(trainingSetSize, allTrainingSamples.size());
+        System.out.println("Training Set:"+trainingSet.size());
+        System.out.println("Validation Set:"+validationSet.size());
         Map<String, List<GroundTruth>> samplesPerClass = new HashMap<>();
         for(GroundTruth gt : trainingSet)
         {
@@ -52,7 +58,7 @@ public class CharClassifier
                 Mat classFeaturesCombined = Utils.getFeatureMatrixFromGroundTruths(classSubset);
                 Mat labelMat = new Mat(subsampleCount, 1, CvType. CV_32SC1);
                 labelMat.setTo(new Scalar(Constants.CHAR_TO_LABEL_MAP.get(character)));
-                System.out.println(labelMat.dump());
+                // System.out.println(labelMat.dump());
                 sampleMatrices.add(classFeaturesCombined);
                 labels.add(labelMat);
             }
@@ -80,48 +86,43 @@ public class CharClassifier
             System.out.println("Training of the SVM finished.");
             svm.save(Constants.CLASSIFIER_SVM_PATH + "svm_"+currEnsembleIndex);
             svmEnsemble.add(svm);
-
             //Measure training set performance
-            Mat trainingResponses = new Mat();
-            svm.predict(totalSampleMatrixFloat,trainingResponses,0);
-            int trainingTotal = 0;
-            int trainingTotalCorrectCount = 0;
-            for(int i=0;i<totalLabelMatrix.rows();i++)
-            {
-                trainingTotal++;
-                if(totalLabelMatrix.get(i,0)[0] == trainingResponses.get(i,0)[0])
-                    trainingTotalCorrectCount++;
-            }
-            double trainingAccuracy = (double)trainingTotalCorrectCount / (double)trainingTotal;
+            double trainingAccuracy = predict(svm, trainingSet, targetLabels);
             System.out.println("Training Accuracy:"+trainingAccuracy);
-            //Measure validaiton set performance
-            List<GroundTruth> targetLabelValidationSet = validationSet.stream().filter(gt -> targetLabels.contains(gt.label)).collect(Collectors.toList());
-            Mat featureMatrix = new Mat(0, targetLabelValidationSet.get(0).getHogFeature().rows(), CvType.CV_64F);
-            for(int i=0;i<targetLabelValidationSet.size();i++)
-            {
-                Mat hogFeatureT = new Mat();
-                Core.transpose(targetLabelValidationSet.get(i).getHogFeature(), hogFeatureT);
-                featureMatrix.push_back(hogFeatureT);
-            }
-            Mat featureMatrixF = new Mat();
-            featureMatrix.convertTo(featureMatrixF, CvType.CV_32F);
-            Mat validationResponses = new Mat();
-            svm.predict(featureMatrixF, validationResponses, 0);
-            int validationTotal = 0;
-            int validationTotalCorrectCount = 0;
-            for(int i=0;i<targetLabelValidationSet.size();i++)
-            {
-                validationTotal++;
-                int trueLabel = Constants.CHAR_TO_LABEL_MAP.get(targetLabelValidationSet.get(i).label);
-                if(trueLabel == validationResponses.get(i,0)[0])
-                    validationTotalCorrectCount++;
-            }
-            double validationAccuracy = (double)validationTotalCorrectCount / (double)validationTotal;
+            //Measure validation set performance
+            double validationAccuracy = predict(svm, validationSet, targetLabels);
             System.out.println("Validation Accuracy:"+validationAccuracy);
-
+            //Measure test set performance
+            double testAccuracy = predict(svm, allTestSamples, targetLabels);
+            System.out.println("Test Accuracy:"+testAccuracy);
         }
         //predict(svmEnsemble, validationSet);
         return svmEnsemble;
+    }
+
+    public static double predict(SVM svm, List<GroundTruth> predictionList, Set<String> targetLabels)
+    {
+        List<GroundTruth> filteredList = predictionList.stream().filter(
+                gt -> targetLabels.contains(gt.label)).collect(Collectors.toList());
+        Mat featureMatrix = new Mat(0, filteredList.get(0).getHogFeature().rows(), CvType.CV_64F);
+        for (GroundTruth gt : filteredList)
+        {
+            Mat hogFeatureT = new Mat();
+            Core.transpose(gt.getHogFeature(), hogFeatureT);
+            featureMatrix.push_back(hogFeatureT);
+        }
+        Mat featureMatrixF = new Mat();
+        featureMatrix.convertTo(featureMatrixF, CvType.CV_32F);
+        Mat validationResponses = new Mat();
+        svm.predict(featureMatrixF, validationResponses, 0);
+        int totalCorrectCount = 0;
+        for(int i=0;i<filteredList.size();i++)
+        {
+            int trueLabel = Constants.CHAR_TO_LABEL_MAP.get(filteredList.get(i).label);
+            if(trueLabel == validationResponses.get(i,0)[0])
+                totalCorrectCount++;
+        }
+        return (double)totalCorrectCount / (double)filteredList.size();
     }
 
     public static void predict(SVMEnsemble ensemble, List<GroundTruth> predictionList)

@@ -143,24 +143,9 @@ public class ObjectDetector {
 //        }
 //    }
 
-    private static String prepareExclusionStatement()
-    {
-        List<String> testImageNames = Utils.getAllTestImageNames();
-        StringBuilder notInStatement = new StringBuilder("FileName NOT IN (");
-        for(int i=0;i<testImageNames.size();i++)
-        {
-            String fileName = testImageNames.get(i);
-            notInStatement.append("\"").append(fileName).append("\"");
-            if(i<testImageNames.size()-1)
-                notInStatement.append(",");
-        }
-        notInStatement.append(")");
-        return notInStatement.toString();
-    }
-
     public static void train(double negativeMaxIoU)
     {
-        String exlusionStatement = prepareExclusionStatement();
+        String exlusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
         String positiveFilterClause = Utils.getFilterClause("Label != -1", exlusionStatement);
         String negativeFilterClause = Utils.getFilterClause(
                 "Label = -1", "IoUWithClosestGT < " +negativeMaxIoU,

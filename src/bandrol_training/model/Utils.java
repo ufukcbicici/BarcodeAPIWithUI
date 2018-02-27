@@ -93,6 +93,27 @@ public class Utils {
 
     }
 
+    public static String getFileSelectionClause()
+    {
+        List<String> testImageNames = Utils.getAllTestImageNames();
+        StringBuilder notInStatement = new StringBuilder("(");
+        for(int i=0;i<testImageNames.size();i++)
+        {
+            String fileName = testImageNames.get(i);
+            notInStatement.append("\"").append(fileName).append("\"");
+            if(i<testImageNames.size()-1)
+                notInStatement.append(",");
+        }
+        notInStatement.append(")");
+        return notInStatement.toString();
+    }
+
+    public static String prepareExclusionStatement()
+    {
+        String fileParanthesis = getFileSelectionClause();
+        return "FileName NOT IN" + fileParanthesis;
+    }
+
     public static double calculateIoU(Rect r0, Rect r1)
     {
         double left = Math.max(r0.x, r1.x);
