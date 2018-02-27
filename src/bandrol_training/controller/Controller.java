@@ -116,6 +116,8 @@ public class Controller {
     private TextField nms_iou_threshold_txt_fld;
     @FXML
     private TextField object_sign_txt_field;
+    @FXML
+    private Button char_classifier_btn;
 
     public Controller()
     {
@@ -315,6 +317,12 @@ public class Controller {
         System.out.println("Writing to DB.");
         DbUtils.writeGroundTruth(negativeList);
         System.out.println("Successfully Completed.");
+    }
+
+    @FXML
+    public void onCharClassifier(ActionEvent actionEvent)
+    {
+        CharClassifier.train(1, 0.25,0, 0.1);
     }
 
     @FXML

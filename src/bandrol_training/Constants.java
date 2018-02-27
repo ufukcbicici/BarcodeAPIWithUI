@@ -18,6 +18,8 @@ public class Constants {
     public static final String LOCALIZED_IMAGE_PATH =  ROOT_PATH + "\\Localized Training Images\\";
     public static final String OBJECT_DETECTOR_FOLDER_PATH = ROOT_PATH + "\\Object Detector  SVMs\\";
     public static final String CLASSIFIER_SVM_PATH = ROOT_PATH + "\\Classifier SVMs\\";
+    public static final String TRAINING_IMAGES = ROOT_PATH + "\\Training Samples\\";
+    public static final String TEST_IMAGES = ROOT_PATH + "\\Test Samples\\";
     public static final double CHARACTER_LOC_GAUSSIAN_KERNEL = 1;
     public static final double DOWNSIZE_RATIO = 0.5;
 //    public static final double REFERENCE_IMAGE_WIDTH = 316;

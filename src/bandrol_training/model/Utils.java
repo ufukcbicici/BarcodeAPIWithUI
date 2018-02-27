@@ -1,5 +1,6 @@
 package bandrol_training.model;
 
+import bandrol_training.Constants;
 import org.opencv.core.*;
 import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
@@ -51,6 +52,37 @@ public class Utils {
         Core.hconcat(classFeatures, classFeaturesCombinedT);
         Core.transpose(classFeaturesCombinedT, classFeaturesCombined);
         return classFeaturesCombined;
+    }
+
+    public static List<String> getAllTestImageNames()
+    {
+        File folder = new File(Constants.TEST_IMAGES);
+        File[] listOfFiles = folder.listFiles();
+        List<String> trainingImageNames = new ArrayList<>();
+        for (int i = 0; i < listOfFiles.length; i++)
+        {
+            if (listOfFiles[i].isFile())
+            {
+                System.out.println("File " + listOfFiles[i].getName());
+                trainingImageNames.add(listOfFiles[i].getName());
+            } else if (listOfFiles[i].isDirectory())
+            {
+                System.out.println("Directory " + listOfFiles[i].getName());
+            }
+        }
+        return trainingImageNames;
+    }
+
+    public static String getFilterClause(String... conditions)
+    {
+        StringBuilder sb = new StringBuilder("");
+        for(int i=0;i<conditions.length;i++)
+        {
+            sb.append(conditions[i]);
+            if(i < conditions.length-1)
+                sb.append(" AND ");
+        }
+        return sb.toString();
     }
 
     public static void showImageInPopup(BufferedImage img)
