@@ -73,6 +73,25 @@ public class Utils {
         return trainingImageNames;
     }
 
+    public static List<String> getAllTrainingImageNames()
+    {
+        File folder = new File(Constants.TRAINING_IMAGES);
+        File[] listOfFiles = folder.listFiles();
+        List<String> trainingImageNames = new ArrayList<>();
+        for (int i = 0; i < listOfFiles.length; i++)
+        {
+            if (listOfFiles[i].isFile())
+            {
+                System.out.println("File " + listOfFiles[i].getName());
+                trainingImageNames.add(listOfFiles[i].getName());
+            } else if (listOfFiles[i].isDirectory())
+            {
+                System.out.println("Directory " + listOfFiles[i].getName());
+            }
+        }
+        return trainingImageNames;
+    }
+
     public static String getFilterClause(String... conditions)
     {
         StringBuilder sb = new StringBuilder("");

@@ -19,8 +19,16 @@ public class CharClassifier
     {
         String inclusionStatement = "FileName IN" + Utils.getFileSelectionClause();
         String exlusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
-        String includeClause = Utils.getFilterClause("Label != -1", inclusionStatement);
-        String excludeClause = Utils.getFilterClause("Label != -1", exlusionStatement);
+        String includeClause = Utils.getFilterClause(
+                "Label != -1",
+                "ABS(VerticalDisplacement) <= 1",
+                "ABS(HorizontalDisplacement) <= 1",
+                inclusionStatement);
+        String excludeClause = Utils.getFilterClause(
+                "Label != -1",
+                "ABS(VerticalDisplacement) <= 1",
+                "ABS(HorizontalDisplacement) <= 1",
+                exlusionStatement);
         List<GroundTruth> allTrainingSamples = DbUtils.readGroundTruths(excludeClause);
         List<GroundTruth> allTestSamples = DbUtils.readGroundTruths(includeClause);
         System.out.println("All Training Samples:" + allTrainingSamples.size());

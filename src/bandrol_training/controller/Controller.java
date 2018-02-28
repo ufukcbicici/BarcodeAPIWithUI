@@ -1,5 +1,6 @@
 package bandrol_training.controller;
 
+import bandrol_training.Constants;
 import bandrol_training.model.*;
 import bandrol_training.model.Algorithm;
 import javafx.embed.swing.SwingFXUtils;
@@ -25,10 +26,12 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.opencv.core.*;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -118,6 +121,11 @@ public class Controller {
     private TextField object_sign_txt_field;
     @FXML
     private Button char_classifier_btn;
+    @FXML
+    private Button detect_on_all_test;
+
+    private int objectDetectorEnsembleCount = 21;
+    private int charClassifierEnsembleCount = 21;
 
     public Controller()
     {
@@ -147,6 +155,32 @@ public class Controller {
         if(labeling_radio_btn.isSelected())
         {
             startLabelImage();
+        }
+    }
+
+    @FXML
+    public void onTestAllImages(ActionEvent actionEvent)
+    {
+        List<String> testImages = Utils.getAllTestImageNames();
+        double sliding_window_width = Double.parseDouble(sliding_window_width_tf.getText());
+        double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
+        for(String fileName : testImages)
+        {
+            String path = Constants.TEST_IMAGES + fileName;
+            Mat image = Imgcodecs.imread(path, Imgcodecs.CV_LOAD_IMAGE_COLOR);
+            Mat resizedSource = new Mat();
+            double referenceWidth = Double.parseDouble(reference_width_tf.getText());
+            double resizeRatio = referenceWidth / image.cols();
+            Imgproc.resize(image, resizedSource,
+                    new Size(resizeRatio*image.cols(),resizeRatio*image.rows()));
+
+            ObjectDetector.detectWithEnsembles(objectDetectorEnsembleCount,
+                    resizedSource,
+                    (int)sliding_window_width,
+                    (int)sliding_window_height,
+                    Double.parseDouble(nms_iou_threshold_txt_fld.getText()),
+                    Double.parseDouble(object_sign_txt_field.getText()),
+                    Double.parseDouble(reference_width_tf.getText()));
         }
     }
 
@@ -234,7 +268,7 @@ public class Controller {
 //                Double.parseDouble(object_sign_txt_field.getText()),
 //                Double.parseDouble(reference_width_tf.getText()));
 
-        ObjectDetector.detectWithEnsembles(1,
+        ObjectDetector.detectWithEnsembles(objectDetectorEnsembleCount,
                                             LabelingStateContainer.sourceTrainingImg,
                                             (int)sliding_window_width,
                                             (int)sliding_window_height,
@@ -331,7 +365,7 @@ public class Controller {
     @FXML
     public void onCharClassifier(ActionEvent actionEvent)
     {
-        CharClassifier.train(11, 0.01,0, 0.0);
+        CharClassifier.train(charClassifierEnsembleCount, 0.01,0, 0.0);
     }
 
     @FXML
@@ -341,7 +375,7 @@ public class Controller {
         double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
         double img_width = Double.parseDouble(reference_width_tf.getText());
         double max_iou = Double.parseDouble(max_iou_txt_fld.getText());
-        ObjectDetector.trainEnsemble(1, max_iou, img_width);
+        ObjectDetector.trainEnsemble(objectDetectorEnsembleCount, max_iou, img_width);
         //ObjectDetector.train(max_iou, img_width);
     }
 
@@ -539,6 +573,44 @@ public class Controller {
         line.setStroke(color);
         line.setStrokeWidth(2);
         central_pane.getChildren().add(line);
+    }
+
+    @FXML
+    private void onShowTrainingSamples()
+    {
+        List<String> trainingImages = Utils.getAllTrainingImageNames();
+        String exlusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
+        String excludeClause = Utils.getFilterClause("Label != -1", exlusionStatement);
+        List<GroundTruth> allTrainingSamples = DbUtils.readGroundTruths(excludeClause);
+        for(String fileName : trainingImages)
+        {
+            List<GroundTruth> imageSamples = allTrainingSamples.stream().
+                    filter(gt ->
+                            gt.fileName.equals(fileName) &&
+                            Math.abs(gt.rotation) < 0.0001 &&
+                            Math.abs(gt.verticalDisplacement) < 0.0001 &&
+                            Math.abs(gt.horizontalDisplacement) < 0.0001).collect(Collectors.toList());
+            assert imageSamples.size() == 14;
+            String path = Constants.TRAINING_IMAGES + fileName;
+            Mat image = Imgcodecs.imread(path, Imgcodecs.CV_LOAD_IMAGE_COLOR);
+            Mat resizedSource = new Mat();
+            double referenceWidth = Double.parseDouble(reference_width_tf.getText());
+            double resizeRatio = referenceWidth / image.cols();
+            Imgproc.resize(image, resizedSource,
+                    new Size(resizeRatio*image.cols(),resizeRatio*image.rows()));
+            for(GroundTruth gt : imageSamples)
+            {
+                Rect r = new Rect(gt.x, gt.y, gt.width, gt.height);
+                String label = gt.label;
+                int font = Core.FONT_HERSHEY_COMPLEX;
+                Imgproc.rectangle(resizedSource, new Point(r.x, r.y),
+                        new Point(r.x + r.width - 1, r.y + r.height - 1),
+                        new Scalar(0, 0, 255));
+                Imgproc.putText(resizedSource, label, new Point(r.x, r.y+10), font,
+                        0.4,new Scalar(0,255,0),1);
+            }
+            Utils.showImageInPopup(Utils.matToBufferedImage(resizedSource, null));
+        }
     }
 
     private Rectangle addNewSlidingWindowRectangle(double x, double y, double width, double height, Color color)

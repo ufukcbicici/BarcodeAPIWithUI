@@ -11,6 +11,7 @@ import org.opencv.ml.ParamGrid;
 import org.opencv.ml.SVM;
 import org.opencv.ml.StatModel;
 
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -41,8 +42,8 @@ class Detection
 public class ObjectDetector {
     // private static double negativeMaxIoU = 0.8;
     private static SVM preLoadedSvm = null;
-    private static double positiveRatio = 0.1;
-    private static double negativeRatio = 0.1;
+    private static double positiveRatio = 0.2;
+    private static double negativeRatio = 0.2;
     private static Map<String, SVM> detectorMap;
     static {
         detectorMap = new HashMap<>();
@@ -206,6 +207,11 @@ public class ObjectDetector {
             Imgproc.rectangle(resultImg, new Point(r.x, r.y),
                     new Point(r.x + r.width - 1, r.y + r.height - 1),
                     new Scalar(0, 0, 255));
+            int font = Core.FONT_HERSHEY_COMPLEX;
+            DecimalFormat df2 = new DecimalFormat(".##");
+            String doubleFormatted = df2.format(dtc.getResponse());
+            Imgproc.putText(resultImg, doubleFormatted, new Point(r.x, r.y), font,
+                    0.4,new Scalar(0,255,0),1);
         }
         String fileName = Utils.getNonExistingFileName(DETECTIONPATH + "detection_result.png", ".png");
         Imgcodecs.imwrite(fileName, resultImg);
@@ -217,9 +223,13 @@ public class ObjectDetector {
     {
         double upperRatio = sourceImgWidth * Constants.QR_RATIO;
         String exlusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
-        String positiveFilterClause = Utils.getFilterClause("Label = \"Y\"", exlusionStatement);
+        String positiveFilterClause = Utils.getFilterClause(
+                "Label = \"B\"",
+                    "ABS(VerticalDisplacement) = 0",
+                    "ABS(HorizontalDisplacement) = 0",
+                exlusionStatement);
         String negativeFilterClause = Utils.getFilterClause(
-                "Label != \"Y\"",
+                "Label != \"B\"",
                 "IoUWithClosestGT < " +negativeMaxIoU,
                 "XCoord < " +upperRatio,
                 exlusionStatement);
