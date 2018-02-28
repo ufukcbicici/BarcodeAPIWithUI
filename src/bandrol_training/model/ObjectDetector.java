@@ -1,6 +1,7 @@
 package bandrol_training.model;
 
 import bandrol_training.Constants;
+import bandrol_training.model.Ensembles.SVMEnsemble;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import org.opencv.core.*;
@@ -15,29 +16,8 @@ import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static bandrol_training.Constants.DEBUGPATH;
 import static bandrol_training.Constants.DETECTIONPATH;
 import static bandrol_training.Constants.OBJECT_DETECTOR_FOLDER_PATH;
-
-class Detection
-{
-    private Rect rect;
-    private Double response;
-
-    public Detection(Rect rect, double response)
-    {
-        this.rect = rect;
-        this.response = response;
-    }
-
-    public Rect getRect() {
-        return rect;
-    }
-
-    public Double getResponse() {
-        return response;
-    }
-}
 
 public class ObjectDetector {
     // private static double negativeMaxIoU = 0.8;
@@ -155,7 +135,9 @@ public class ObjectDetector {
 //        }
 //    }
 
-    public static List<Detection> detectWithEnsembles(int ensembleCount,
+    public static List<Detection> detectWithEnsembles(
+                                           int ensembleCount,
+                                           String label,
                                            Mat img,
                                            int sliding_window_width,
                                            int sliding_window_height,
@@ -163,12 +145,8 @@ public class ObjectDetector {
                                            double object_sign,
                                            double source_width)
     {
-        SVMEnsemble svmEnsemble = new SVMEnsemble();
-        for(int i=0;i<ensembleCount;i++)
-        {
-            SVM svm = SVM.load(Constants.OBJECT_DETECTOR_FOLDER_PATH + "object_detector_svm_"+i);
-            svmEnsemble.add(svm);
-        }
+        SVMEnsemble svmEnsemble = new SVMEnsemble(false);
+        svmEnsemble.loadEnsemble(ensembleCount, label);
         Mat resultImg = img.clone();
         Table<Integer, Integer, Mat> featureTable = extractFeatures(
                 img,
@@ -219,17 +197,21 @@ public class ObjectDetector {
         return maxima;
     }
 
-    public static void trainEnsemble(int ensembleCount, double negativeMaxIoU, double sourceImgWidth)
+    public static void trainEnsemble(int ensembleCount,
+                                     double negativeMaxIoU,
+                                     double sourceImgWidth,
+                                     String character)
     {
+        String charToTrain = "\"" + character + "\"";
         double upperRatio = sourceImgWidth * Constants.QR_RATIO;
         String exlusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
         String positiveFilterClause = Utils.getFilterClause(
-                "Label = \"B\"",
-                    "ABS(VerticalDisplacement) = 0",
-                    "ABS(HorizontalDisplacement) = 0",
+                "Label = "+charToTrain,
+                    "ABS(VerticalDisplacement) < 3",
+                    "ABS(HorizontalDisplacement) < 3",
                 exlusionStatement);
         String negativeFilterClause = Utils.getFilterClause(
-                "Label != \"B\"",
+                "Label != "+charToTrain,
                 "IoUWithClosestGT < " +negativeMaxIoU,
                 "XCoord < " +upperRatio,
                 exlusionStatement);
@@ -276,10 +258,10 @@ public class ObjectDetector {
             svm.trainAuto(completeFeatureMatrixFloat, Ml.ROW_SAMPLE, completeLabelsMatrix, 10,
                     C_grid, gamma_grid, p_grid, nu_grid,
                     coeff_grid,degree_grid,false);
-            svm.save(Constants.OBJECT_DETECTOR_FOLDER_PATH + "object_detector_svm_"+i);
-            svmEnsemble.add(svm);
+            svmEnsemble.addModel(svm);
             System.out.println("Finished training Object Detector SVM "+i);
         }
+        svmEnsemble.saveEnsemble(charToTrain);
         System.out.println("Finished training the ensemble");
     }
 

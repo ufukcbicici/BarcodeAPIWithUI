@@ -34,6 +34,7 @@ public class Constants {
 
 
     public static final List<String> LABELS;
+    public static final List<String> CURR_LABELS;
     public static final Map<String, Integer> CHAR_TO_LABEL_MAP;
     public static final Map<Integer, String> LABEL_TO_CHAR_MAP;
     public static final List<String> NOISY_FILES;
@@ -42,6 +43,8 @@ public class Constants {
         LABELS = new ArrayList<>(Arrays.asList("0","1","2","3","4","5","6","7","8","9",
                 "A","B","C","D","E","F","G","H","I","J","K",
                 "L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z" ));
+        CURR_LABELS = new ArrayList<>(Arrays.asList("0","1","2","3","4","5","6","7","8","9",
+                "A","B","C","D","E","F","G","H","J","K","M","N","P","Q","R","S","T","V","W","X","Y","Z" ));
         CHAR_TO_LABEL_MAP = new HashMap<>();
         LABEL_TO_CHAR_MAP = new HashMap<>();
         for(int i=0; i < LABELS.size(); i++) {

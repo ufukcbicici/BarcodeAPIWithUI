@@ -3,6 +3,7 @@ package bandrol_training.controller;
 import bandrol_training.Constants;
 import bandrol_training.model.*;
 import bandrol_training.model.Algorithm;
+import bandrol_training.model.Detectors.Detector1;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -25,13 +26,13 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import jdk.jshell.spi.ExecutionControl;
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -123,9 +124,17 @@ public class Controller {
     private Button char_classifier_btn;
     @FXML
     private Button detect_on_all_test;
+    @FXML
+    private Button method_0_btn;
+    @FXML
+    private Button method_1_btn;
 
-    private int objectDetectorEnsembleCount = 21;
+    private Detector1 detector1;
+
+
+    private int objectDetectorEnsembleCount = 1;
     private int charClassifierEnsembleCount = 21;
+    private String charToProcess = "W";
 
     public Controller()
     {
@@ -134,6 +143,7 @@ public class Controller {
         listOfClickPoints = new ArrayList<>();
         listOfImagePoints = new ArrayList<>();
         LabelingStateContainer.reset();
+        detector1 = null;
     }
 
     public void initUIElements()
@@ -144,6 +154,30 @@ public class Controller {
                 "0","1","2","3","4","5","6","7","8","9"
         );
         label_selection_cmbox.getSelectionModel().select("A");
+    }
+
+    @FXML
+    public void run_method_0(ActionEvent actionEvent)
+    {
+
+    }
+
+    @FXML
+    public void run_method_1(ActionEvent actionEvent)
+    {
+        if(detector1 == null)
+        {
+            detector1  = new Detector1(ClassifierType.SVM);
+            try
+            {
+                detector1.init(objectDetectorEnsembleCount);
+            } catch (ExecutionControl.NotImplementedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // detector1.detect();
+
     }
 
     @FXML
@@ -174,7 +208,9 @@ public class Controller {
             Imgproc.resize(image, resizedSource,
                     new Size(resizeRatio*image.cols(),resizeRatio*image.rows()));
 
-            ObjectDetector.detectWithEnsembles(objectDetectorEnsembleCount,
+            ObjectDetector.detectWithEnsembles(
+                    objectDetectorEnsembleCount,
+                    charToProcess,
                     resizedSource,
                     (int)sliding_window_width,
                     (int)sliding_window_height,
@@ -269,12 +305,11 @@ public class Controller {
 //                Double.parseDouble(reference_width_tf.getText()));
 
         ObjectDetector.detectWithEnsembles(objectDetectorEnsembleCount,
-                                            LabelingStateContainer.sourceTrainingImg,
-                                            (int)sliding_window_width,
-                                            (int)sliding_window_height,
-                                            Double.parseDouble(nms_iou_threshold_txt_fld.getText()),
-                                            Double.parseDouble(object_sign_txt_field.getText()),
-                                            Double.parseDouble(reference_width_tf.getText()));
+                charToProcess, LabelingStateContainer.sourceTrainingImg,
+                (int)sliding_window_width,(int)sliding_window_height,
+                Double.parseDouble(nms_iou_threshold_txt_fld.getText()),
+                Double.parseDouble(object_sign_txt_field.getText()),
+                Double.parseDouble(reference_width_tf.getText()));
     }
 
     @FXML
@@ -375,7 +410,7 @@ public class Controller {
         double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
         double img_width = Double.parseDouble(reference_width_tf.getText());
         double max_iou = Double.parseDouble(max_iou_txt_fld.getText());
-        ObjectDetector.trainEnsemble(objectDetectorEnsembleCount, max_iou, img_width);
+        ObjectDetector.trainEnsemble(objectDetectorEnsembleCount, max_iou, img_width, charToProcess);
         //ObjectDetector.train(max_iou, img_width);
     }
 

@@ -1,11 +1,11 @@
 package bandrol_training.model;
 
 import bandrol_training.Constants;
+import bandrol_training.model.Ensembles.SVMEnsemble;
 import org.opencv.core.*;
 import org.opencv.ml.Ml;
 import org.opencv.ml.ParamGrid;
 import org.opencv.ml.SVM;
-import org.opencv.ml.StatModel;
 
 import java.util.*;
 import java.util.stream.Collectors;
