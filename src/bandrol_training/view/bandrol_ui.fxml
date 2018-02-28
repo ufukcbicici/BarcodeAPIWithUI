@@ -44,7 +44,7 @@
             <GridPane prefHeight="27.0" GridPane.columnIndex="0" GridPane.rowIndex="0">
               <children>
                 <Label text="Max IoU" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
-                <TextField fx:id="max_iou_txt_fld" prefWidth="200.0" text="0.9" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                <TextField fx:id="max_iou_txt_fld" prefWidth="200.0" text="0.85" GridPane.columnIndex="1" GridPane.rowIndex="0" />
               </children>
               <columnConstraints>
                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -69,7 +69,7 @@
             <GridPane GridPane.columnIndex="0" GridPane.rowIndex="0">
               <children>
                 <Label text="NMS IoU" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
-                <TextField fx:id="nms_iou_threshold_txt_fld" prefWidth="200.0" text="0.5" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                <TextField fx:id="nms_iou_threshold_txt_fld" prefWidth="200.0" text="0.025" GridPane.columnIndex="1" GridPane.rowIndex="0" />
                 <Label text="Object Sign" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
                 <TextField fx:id="object_sign_txt_field" prefWidth="200.0" text="-1" GridPane.columnIndex="1" GridPane.rowIndex="1" />
               </children>

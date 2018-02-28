@@ -226,12 +226,21 @@ public class Controller {
         double sliding_window_width = Double.parseDouble(sliding_window_width_tf.getText());
         double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
 
-        ObjectDetector.detectObjects(
-                LabelingStateContainer.sourceTrainingImg,
-                (int)sliding_window_width,
-                (int)sliding_window_height,
-                Double.parseDouble(nms_iou_threshold_txt_fld.getText()),
-                Double.parseDouble(object_sign_txt_field.getText()));
+//        ObjectDetector.detectObjects(
+//                LabelingStateContainer.sourceTrainingImg,
+//                (int)sliding_window_width,
+//                (int)sliding_window_height,
+//                Double.parseDouble(nms_iou_threshold_txt_fld.getText()),
+//                Double.parseDouble(object_sign_txt_field.getText()),
+//                Double.parseDouble(reference_width_tf.getText()));
+
+        ObjectDetector.detectWithEnsembles(1,
+                                            LabelingStateContainer.sourceTrainingImg,
+                                            (int)sliding_window_width,
+                                            (int)sliding_window_height,
+                                            Double.parseDouble(nms_iou_threshold_txt_fld.getText()),
+                                            Double.parseDouble(object_sign_txt_field.getText()),
+                                            Double.parseDouble(reference_width_tf.getText()));
     }
 
     @FXML
@@ -322,7 +331,7 @@ public class Controller {
     @FXML
     public void onCharClassifier(ActionEvent actionEvent)
     {
-        CharClassifier.train(3, 0.01,0, 0.0);
+        CharClassifier.train(11, 0.01,0, 0.0);
     }
 
     @FXML
@@ -330,8 +339,10 @@ public class Controller {
     {
         double sliding_window_width = Double.parseDouble(sliding_window_width_tf.getText());
         double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
+        double img_width = Double.parseDouble(reference_width_tf.getText());
         double max_iou = Double.parseDouble(max_iou_txt_fld.getText());
-        ObjectDetector.train(max_iou);
+        ObjectDetector.trainEnsemble(1, max_iou, img_width);
+        //ObjectDetector.train(max_iou, img_width);
     }
 
     @FXML

@@ -29,6 +29,8 @@ public class CharClassifier
         int trainingSetSize = (int)(allTrainingSamples.size() * (1.0-validationRatio));
         List<GroundTruth> trainingSet = allTrainingSamples.subList(0,trainingSetSize);
         List<GroundTruth> validationSet = allTrainingSamples.subList(trainingSetSize, allTrainingSamples.size());
+        List<GroundTruth> unrotatedTestSamples = allTestSamples.stream().
+                filter(gt -> Math.abs(gt.rotation) < 0.0001).collect(Collectors.toList());
         System.out.println("Training Set:"+trainingSet.size());
         System.out.println("Validation Set:"+validationSet.size());
         Map<String, List<GroundTruth>> samplesPerClass = new HashMap<>();
@@ -101,12 +103,17 @@ public class CharClassifier
             //Measure test set performance
             double testAccuracy = predict(svm, allTestSamples, targetLabels);
             System.out.println("Test Accuracy:"+testAccuracy);
+            //Measure unrotated set performance
+            double unrotatedTestAccuracy = predict(svm, unrotatedTestSamples, targetLabels);
+            System.out.println("Unrotated Test Accuracy:"+unrotatedTestAccuracy);
             System.out.println("***********SVM "+currEnsembleIndex+"***********");
         }
         predict(svmEnsemble, trainingSet);
         if(validationSet.size() > 0)
             predict(svmEnsemble, validationSet);
         predict(svmEnsemble, allTestSamples);
+        //Measure unrotated set performance
+        predict(svmEnsemble, unrotatedTestSamples);
         return svmEnsemble;
     }
 

@@ -59,4 +59,26 @@ public class SVMEnsemble {
         }
         return finalResponses;
     }
+
+    public List<Mat> predictLabels(Mat samples)
+    {
+        List<Mat> responses = new ArrayList<>();
+        for(SVM svm : svmList) {
+            Mat response = new Mat();
+            svm.predict(samples, response, 0);
+            responses.add(response);
+        }
+        return responses;
+    }
+
+    public List<Mat> predictMargins(Mat samples)
+    {
+        List<Mat> margins = new ArrayList<>();
+        for(SVM svm : svmList) {
+            Mat response = new Mat();
+            svm.predict(samples, response, StatModel.RAW_OUTPUT);
+            margins.add(response);
+        }
+        return margins;
+    }
 }

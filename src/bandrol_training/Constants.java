@@ -30,6 +30,7 @@ public class Constants {
             "jdbc:sqlite:C:/Users/ufuk.bicici/Desktop/Bandrol/bandrol.db";
     public static final String GROUND_TRUTH_TABLE = "BANDROL_GROUND_TRUTHS";
     public static final String HOG_TABLE = "HOG_FEATURES";
+    public static final double QR_RATIO = 0.1;
 
 
     public static final List<String> LABELS;

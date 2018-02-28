@@ -41,8 +41,8 @@ class Detection
 public class ObjectDetector {
     // private static double negativeMaxIoU = 0.8;
     private static SVM preLoadedSvm = null;
-    private static double positiveRatio = 0.01;
-    private static double negativeRatio = 0.01;
+    private static double positiveRatio = 0.1;
+    private static double negativeRatio = 0.1;
     private static Map<String, SVM> detectorMap;
     static {
         detectorMap = new HashMap<>();
@@ -72,12 +72,16 @@ public class ObjectDetector {
         return maxima;
     }
 
-    private static Table<Integer, Integer, Mat> extractFeatures(Mat img, int sliding_window_width, int sliding_window_height)
+    private static Table<Integer, Integer, Mat> extractFeatures(Mat img,
+                                                                int sliding_window_width,
+                                                                int sliding_window_height,
+                                                                double sourceImgWidth)
     {
         Table<Integer, Integer, Mat> hogTable = HashBasedTable.create();
+        double upperRatio = sourceImgWidth * Constants.QR_RATIO;
         for(int i=0;i<img.rows();i++) {
             for (int j = 0; j < img.cols(); j++) {
-                if (i + sliding_window_height - 1 >= img.rows())
+                if (i < upperRatio || i + sliding_window_height - 1 >= img.rows())
                     continue;
                 if (j + sliding_window_width - 1 >= img.cols())
                     continue;
@@ -90,15 +94,22 @@ public class ObjectDetector {
     }
 
     public static List<Detection> detectObjects(Mat img,
-                                                int sliding_window_width, int sliding_window_height,
-                                                double nms_iou_threshold, double object_sign)
+                                                int sliding_window_width,
+                                                int sliding_window_height,
+                                                double nms_iou_threshold,
+                                                double object_sign,
+                                                double source_width)
     {
         SVM svm = null;
         if(preLoadedSvm==null)
             svm = SVM.load(OBJECT_DETECTOR_FOLDER_PATH+"ObjectDetector");
 
         Mat resultImg = img.clone();
-        Table<Integer, Integer, Mat> featureTable = extractFeatures(img, sliding_window_width, sliding_window_height);
+        Table<Integer, Integer, Mat> featureTable = extractFeatures(
+                img,
+                sliding_window_width,
+                sliding_window_height,
+                source_width);
         List<Detection> listOfDetections = new ArrayList<>();
         for(Table.Cell c : featureTable.cellSet())
         {
@@ -143,12 +154,134 @@ public class ObjectDetector {
 //        }
 //    }
 
-    public static void train(double negativeMaxIoU)
+    public static List<Detection> detectWithEnsembles(int ensembleCount,
+                                           Mat img,
+                                           int sliding_window_width,
+                                           int sliding_window_height,
+                                           double nms_iou_threshold,
+                                           double object_sign,
+                                           double source_width)
     {
+        SVMEnsemble svmEnsemble = new SVMEnsemble();
+        for(int i=0;i<ensembleCount;i++)
+        {
+            SVM svm = SVM.load(Constants.OBJECT_DETECTOR_FOLDER_PATH + "object_detector_svm_"+i);
+            svmEnsemble.add(svm);
+        }
+        Mat resultImg = img.clone();
+        Table<Integer, Integer, Mat> featureTable = extractFeatures(
+                img,
+                sliding_window_width,
+                sliding_window_height,
+                source_width);
+        List<Detection> listOfDetections = new ArrayList<>();
+        for(Table.Cell c : featureTable.cellSet())
+        {
+            Mat hogFeatureT = new Mat();
+            Core.transpose((Mat) c.getValue(), hogFeatureT);
+            Mat hog32f = new Mat();
+            hogFeatureT.convertTo(hog32f, CvType.CV_32F);
+            List<Mat> predictedLabels = svmEnsemble.predictLabels(hog32f);
+            List<Mat> predictedMargins = svmEnsemble.predictMargins(hog32f);
+            double totalMarginResponse = 0.0;
+            double totalVote = 0.0;
+            for(int svmIndex=0;svmIndex<svmEnsemble.getSvmList().size();svmIndex++)
+            {
+                double predictedLabel = predictedLabels.get(svmIndex).get(0,0)[0];
+                totalVote += predictedLabel;
+                totalMarginResponse += Math.abs(predictedMargins.get(svmIndex).get(0,0)[0])*predictedLabel;
+            }
+            double avgMarginResponse = totalMarginResponse / (double)svmEnsemble.getSvmList().size();
+            if(totalVote > 0)
+            {
+                Detection detection = new Detection(
+                        new Rect((int) c.getColumnKey(), (int) c.getRowKey(),
+                                sliding_window_width, sliding_window_height), avgMarginResponse);
+                listOfDetections.add(detection);
+            }
+        }
+        List<Detection> maxima = nonMaximaSuppression(listOfDetections, nms_iou_threshold);
+        for (Detection dtc : maxima) {
+            Rect r = dtc.getRect();
+            Imgproc.rectangle(resultImg, new Point(r.x, r.y),
+                    new Point(r.x + r.width - 1, r.y + r.height - 1),
+                    new Scalar(0, 0, 255));
+        }
+        String fileName = Utils.getNonExistingFileName(DETECTIONPATH + "detection_result.png", ".png");
+        Imgcodecs.imwrite(fileName, resultImg);
+        Utils.showImageInPopup(Utils.matToBufferedImage(resultImg, null));
+        return maxima;
+    }
+
+    public static void trainEnsemble(int ensembleCount, double negativeMaxIoU, double sourceImgWidth)
+    {
+        double upperRatio = sourceImgWidth * Constants.QR_RATIO;
+        String exlusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
+        String positiveFilterClause = Utils.getFilterClause("Label = \"Y\"", exlusionStatement);
+        String negativeFilterClause = Utils.getFilterClause(
+                "Label != \"Y\"",
+                "IoUWithClosestGT < " +negativeMaxIoU,
+                "XCoord < " +upperRatio,
+                exlusionStatement);
+        List<GroundTruth> positiveSamples = DbUtils.readGroundTruths(positiveFilterClause);
+        List<GroundTruth> negativeSamples = DbUtils.readGroundTruths(negativeFilterClause);
+        SVMEnsemble svmEnsemble = new SVMEnsemble();
+        for(int i=0;i<ensembleCount;i++)
+        {
+            System.out.println("Training Object Detector SVM "+i);
+            Collections.shuffle(positiveSamples);
+            Collections.shuffle(negativeSamples);
+            int positiveSampleCount = (int)Math.round((double)positiveSamples.size() * positiveRatio);
+            int negativeSampleCount = (int)Math.round((double)negativeSamples.size() * negativeRatio);
+            List<GroundTruth> positiveSubset = positiveSamples.subList(0, positiveSampleCount);
+            List<GroundTruth> negativeSubset = negativeSamples.subList(0, negativeSampleCount);
+            System.out.println("positiveSubset Size:"+positiveSubset.size());
+            System.out.println("negativeSubset Size:"+negativeSubset.size());
+            SVM svm = SVM.create();
+            TermCriteria terminationCriteria = new TermCriteria(TermCriteria.COUNT + TermCriteria.EPS,
+                    1000, 1e-3 );
+            svm.setKernel(SVM.LINEAR);
+            ParamGrid C_grid = SVM.getDefaultGridPtr(SVM.C);
+            ParamGrid gamma_grid = ParamGrid.create(0, 0,0);
+            ParamGrid p_grid = ParamGrid.create(0, 0,0);
+            ParamGrid nu_grid = ParamGrid.create(0, 0,0);
+            ParamGrid coeff_grid = ParamGrid.create(0, 0,0);
+            ParamGrid degree_grid = ParamGrid.create(0, 0,0);
+            Mat positiveFeaturesMatrix = Utils.getFeatureMatrixFromGroundTruths(positiveSubset);
+            Mat negativeFeaturesMatrix = Utils.getFeatureMatrixFromGroundTruths(negativeSubset);
+            System.out.println("positiveSubset Size:"+positiveFeaturesMatrix.rows());
+            System.out.println("negativeSubset Size:"+negativeFeaturesMatrix.rows());
+            Mat completeFeatureMatrix = new Mat();
+            Core.vconcat(Arrays.asList(positiveFeaturesMatrix, negativeFeaturesMatrix), completeFeatureMatrix);
+            Mat completeFeatureMatrixFloat = new Mat();
+            completeFeatureMatrix.convertTo(completeFeatureMatrixFloat, CvType.CV_32F);
+            Mat positiveLabelsMatrix = new Mat(positiveSubset.size(), 1, CvType. CV_32SC1);
+            Mat negativeLabelsMatrix = new Mat(negativeSubset.size(), 1, CvType. CV_32SC1);
+            positiveLabelsMatrix.setTo(new Scalar(1));
+            negativeLabelsMatrix.setTo(new Scalar(-1));
+            assert positiveFeaturesMatrix.rows() == positiveLabelsMatrix.rows();
+            assert negativeFeaturesMatrix.rows() == negativeLabelsMatrix.rows();
+            Mat completeLabelsMatrix = new Mat();
+            Core.vconcat(Arrays.asList(positiveLabelsMatrix, negativeLabelsMatrix), completeLabelsMatrix);
+            svm.trainAuto(completeFeatureMatrixFloat, Ml.ROW_SAMPLE, completeLabelsMatrix, 10,
+                    C_grid, gamma_grid, p_grid, nu_grid,
+                    coeff_grid,degree_grid,false);
+            svm.save(Constants.OBJECT_DETECTOR_FOLDER_PATH + "object_detector_svm_"+i);
+            svmEnsemble.add(svm);
+            System.out.println("Finished training Object Detector SVM "+i);
+        }
+        System.out.println("Finished training the ensemble");
+    }
+
+    public static void train(double negativeMaxIoU, double sourceImgWidth)
+    {
+        double upperRatio = sourceImgWidth * Constants.QR_RATIO;
         String exlusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
         String positiveFilterClause = Utils.getFilterClause("Label != -1", exlusionStatement);
         String negativeFilterClause = Utils.getFilterClause(
-                "Label = -1", "IoUWithClosestGT < " +negativeMaxIoU,
+                "Label = -1",
+                "IoUWithClosestGT < " +negativeMaxIoU,
+                "XCoord < " +upperRatio,
                 exlusionStatement);
         List<GroundTruth> positiveSamples = DbUtils.readGroundTruths(positiveFilterClause);
         List<GroundTruth> negativeSamples = DbUtils.readGroundTruths(negativeFilterClause);
