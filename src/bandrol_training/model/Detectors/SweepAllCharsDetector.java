@@ -34,19 +34,19 @@ public class SweepAllCharsDetector extends DetectionMethod {
     }
 
     public void init(int ensembleCount) throws ExecutionControl.NotImplementedException {
-        for(String label : Constants.CURR_LABELS)
-        {
-            switch (this.classifierType)
-            {
-                case SVM:
-                    SVMEnsemble svmEnsemble = new SVMEnsemble();
-                    svmEnsemble.loadEnsemble(ensembleCount, label);
-                    ensembleMap.put(label, svmEnsemble);
-                    break;
-                case MLP:
-                    throw new ExecutionControl.NotImplementedException("MLP not implemented");
-            }
-        }
+//        for(String label : Constants.CURR_LABELS)
+//        {
+//            switch (this.classifierType)
+//            {
+//                case SVM:
+//                    SVMEnsemble svmEnsemble = new SVMEnsemble();
+//                    svmEnsemble.loadEnsemble(ensembleCount, label);
+//                    ensembleMap.put(label, svmEnsemble);
+//                    break;
+//                case MLP:
+//                    throw new ExecutionControl.NotImplementedException("MLP not implemented");
+//            }
+//        }
     }
 
     public void detect(Mat img, int sliding_window_width, int sliding_window_height,

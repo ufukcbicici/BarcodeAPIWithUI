@@ -3,7 +3,7 @@ package bandrol_training.controller;
 import bandrol_training.Constants;
 import bandrol_training.model.*;
 import bandrol_training.model.Algorithm;
-import bandrol_training.model.Detectors.Detector1;
+// import bandrol_training.model.Detectors.Detector1;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -129,12 +129,12 @@ public class Controller {
     @FXML
     private Button method_1_btn;
 
-    private Detector1 detector1;
+    // private Detector1 detector1;
 
 
     private int objectDetectorEnsembleCount = 1;
     private int charClassifierEnsembleCount = 21;
-    private String charToProcess = "W";
+    private String charToProcess = "0";
 
     public Controller()
     {
@@ -143,7 +143,7 @@ public class Controller {
         listOfClickPoints = new ArrayList<>();
         listOfImagePoints = new ArrayList<>();
         LabelingStateContainer.reset();
-        detector1 = null;
+        // detector1 = null;
     }
 
     public void initUIElements()
@@ -165,16 +165,16 @@ public class Controller {
     @FXML
     public void run_method_1(ActionEvent actionEvent)
     {
-        if(detector1 == null)
-        {
-            detector1  = new Detector1(ClassifierType.SVM);
-            try
-            {
-                detector1.init(objectDetectorEnsembleCount);
-            } catch (ExecutionControl.NotImplementedException e) {
-                e.printStackTrace();
-            }
-        }
+//        if(detector1 == null)
+//        {
+//            detector1  = new Detector1(ClassifierType.SVM);
+//            try
+//            {
+//                detector1.init(objectDetectorEnsembleCount);
+//            } catch (ExecutionControl.NotImplementedException e) {
+//                e.printStackTrace();
+//            }
+//        }
 
         // detector1.detect();
 

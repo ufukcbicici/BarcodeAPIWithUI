@@ -22,8 +22,8 @@ import static bandrol_training.Constants.OBJECT_DETECTOR_FOLDER_PATH;
 public class ObjectDetector {
     // private static double negativeMaxIoU = 0.8;
     private static SVM preLoadedSvm = null;
-    private static double positiveRatio = 0.2;
-    private static double negativeRatio = 0.2;
+    private static double positiveRatio = 0.05;
+    private static double negativeRatio = 0.1;
     private static Map<String, SVM> detectorMap;
     static {
         detectorMap = new HashMap<>();
@@ -136,14 +136,14 @@ public class ObjectDetector {
 //    }
 
     public static List<Detection> detectWithEnsembles(
-                                           int ensembleCount,
-                                           String label,
-                                           Mat img,
-                                           int sliding_window_width,
-                                           int sliding_window_height,
-                                           double nms_iou_threshold,
-                                           double object_sign,
-                                           double source_width)
+            int ensembleCount,
+            String label,
+            Mat img,
+            int sliding_window_width,
+            int sliding_window_height,
+            double nms_iou_threshold,
+            double object_sign,
+            double source_width)
     {
         SVMEnsemble svmEnsemble = new SVMEnsemble(false);
         svmEnsemble.loadEnsemble(ensembleCount, label);
@@ -156,19 +156,28 @@ public class ObjectDetector {
         List<Detection> listOfDetections = new ArrayList<>();
         for(Table.Cell c : featureTable.cellSet())
         {
-            Mat hogFeatureT = new Mat();
-            Core.transpose((Mat) c.getValue(), hogFeatureT);
-            Mat hog32f = new Mat();
-            hogFeatureT.convertTo(hog32f, CvType.CV_32F);
-            List<Mat> predictedLabels = svmEnsemble.predictLabels(hog32f);
-            List<Mat> predictedMargins = svmEnsemble.predictMargins(hog32f);
+            Mat featureT = (Mat)c.getValue();
+            Mat feature = new Mat();
+            assert featureT != null;
+            Core.transpose(featureT, feature);
+//            Mat result;
+//            try
+//            {
+//                result = svmEnsemble.predictByVoting(feature);
+//                // System.out.println(result.dump());
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+            Mat predictedLabels = svmEnsemble.predictLabels(feature);
+            Mat predictedMargins = svmEnsemble.predictMargins(feature);
             double totalMarginResponse = 0.0;
             double totalVote = 0.0;
-            for(int svmIndex=0;svmIndex<svmEnsemble.getSvmList().size();svmIndex++)
+            assert predictedLabels.cols() == predictedMargins.cols();
+            for(int j=0;j<predictedLabels.cols();j++)
             {
-                double predictedLabel = predictedLabels.get(svmIndex).get(0,0)[0];
+                double predictedLabel = predictedLabels.get(0,j)[0];
                 totalVote += predictedLabel;
-                totalMarginResponse += Math.abs(predictedMargins.get(svmIndex).get(0,0)[0])*predictedLabel;
+                totalMarginResponse += Math.abs(predictedMargins.get(0,j)[0])*predictedLabel;
             }
             double avgMarginResponse = totalMarginResponse / (double)svmEnsemble.getSvmList().size();
             if(totalVote > 0)
@@ -207,62 +216,44 @@ public class ObjectDetector {
         String exlusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
         String positiveFilterClause = Utils.getFilterClause(
                 "Label = "+charToTrain,
-                    "ABS(VerticalDisplacement) < 3",
-                    "ABS(HorizontalDisplacement) < 3",
+                "ABS(VerticalDisplacement) < 3",
+                "ABS(HorizontalDisplacement) < 3",
+                "ABS(Rotation) < 6",
                 exlusionStatement);
         String negativeFilterClause = Utils.getFilterClause(
                 "Label != "+charToTrain,
+                "YCoord > " + upperRatio,
                 "IoUWithClosestGT < " +negativeMaxIoU,
-                "XCoord < " +upperRatio,
                 exlusionStatement);
-        List<GroundTruth> positiveSamples = DbUtils.readGroundTruths(positiveFilterClause);
-        List<GroundTruth> negativeSamples = DbUtils.readGroundTruths(negativeFilterClause);
-        SVMEnsemble svmEnsemble = new SVMEnsemble();
+        List<GroundTruth> allPositiveSamples = DbUtils.readGroundTruths(positiveFilterClause);
+        List<GroundTruth> allNegativeSamples = DbUtils.readGroundTruths(negativeFilterClause);
+        SVMEnsemble svmEnsemble = new SVMEnsemble(false);
         for(int i=0;i<ensembleCount;i++)
         {
             System.out.println("Training Object Detector SVM "+i);
-            Collections.shuffle(positiveSamples);
-            Collections.shuffle(negativeSamples);
-            int positiveSampleCount = (int)Math.round((double)positiveSamples.size() * positiveRatio);
-            int negativeSampleCount = (int)Math.round((double)negativeSamples.size() * negativeRatio);
-            List<GroundTruth> positiveSubset = positiveSamples.subList(0, positiveSampleCount);
-            List<GroundTruth> negativeSubset = negativeSamples.subList(0, negativeSampleCount);
+            Collections.shuffle(allPositiveSamples);
+            Collections.shuffle(allNegativeSamples);
+            int positiveSampleCount = (int)Math.round((double)allPositiveSamples.size() * positiveRatio);
+            int negativeSampleCount = (int)Math.round((double)allNegativeSamples.size() * negativeRatio);
+            List<GroundTruth> positiveSubset = allPositiveSamples.subList(0, positiveSampleCount);
+            List<GroundTruth> negativeSubset = allNegativeSamples.subList(0, negativeSampleCount);
             System.out.println("positiveSubset Size:"+positiveSubset.size());
             System.out.println("negativeSubset Size:"+negativeSubset.size());
-            SVM svm = SVM.create();
-            TermCriteria terminationCriteria = new TermCriteria(TermCriteria.COUNT + TermCriteria.EPS,
-                    1000, 1e-3 );
-            svm.setKernel(SVM.LINEAR);
-            ParamGrid C_grid = SVM.getDefaultGridPtr(SVM.C);
-            ParamGrid gamma_grid = ParamGrid.create(0, 0,0);
-            ParamGrid p_grid = ParamGrid.create(0, 0,0);
-            ParamGrid nu_grid = ParamGrid.create(0, 0,0);
-            ParamGrid coeff_grid = ParamGrid.create(0, 0,0);
-            ParamGrid degree_grid = ParamGrid.create(0, 0,0);
             Mat positiveFeaturesMatrix = Utils.getFeatureMatrixFromGroundTruths(positiveSubset);
             Mat negativeFeaturesMatrix = Utils.getFeatureMatrixFromGroundTruths(negativeSubset);
-            System.out.println("positiveSubset Size:"+positiveFeaturesMatrix.rows());
-            System.out.println("negativeSubset Size:"+negativeFeaturesMatrix.rows());
-            Mat completeFeatureMatrix = new Mat();
-            Core.vconcat(Arrays.asList(positiveFeaturesMatrix, negativeFeaturesMatrix), completeFeatureMatrix);
-            Mat completeFeatureMatrixFloat = new Mat();
-            completeFeatureMatrix.convertTo(completeFeatureMatrixFloat, CvType.CV_32F);
             Mat positiveLabelsMatrix = new Mat(positiveSubset.size(), 1, CvType. CV_32SC1);
             Mat negativeLabelsMatrix = new Mat(negativeSubset.size(), 1, CvType. CV_32SC1);
             positiveLabelsMatrix.setTo(new Scalar(1));
             negativeLabelsMatrix.setTo(new Scalar(-1));
-            assert positiveFeaturesMatrix.rows() == positiveLabelsMatrix.rows();
-            assert negativeFeaturesMatrix.rows() == negativeLabelsMatrix.rows();
+            Mat completeFeatureMatrix = new Mat();
+            Core.vconcat(Arrays.asList(positiveFeaturesMatrix, negativeFeaturesMatrix), completeFeatureMatrix);
             Mat completeLabelsMatrix = new Mat();
             Core.vconcat(Arrays.asList(positiveLabelsMatrix, negativeLabelsMatrix), completeLabelsMatrix);
-            svm.trainAuto(completeFeatureMatrixFloat, Ml.ROW_SAMPLE, completeLabelsMatrix, 10,
-                    C_grid, gamma_grid, p_grid, nu_grid,
-                    coeff_grid,degree_grid,false);
-            svmEnsemble.addModel(svm);
+            svmEnsemble.trainSingleModel(completeFeatureMatrix, completeLabelsMatrix);
             System.out.println("Finished training Object Detector SVM "+i);
         }
-        svmEnsemble.saveEnsemble(charToTrain);
         System.out.println("Finished training the ensemble");
+        svmEnsemble.saveEnsemble(character);
     }
 
     public static void train(double negativeMaxIoU, double sourceImgWidth)

@@ -1,18 +1,16 @@
 package bandrol_training.model.Ensembles;
 
 import bandrol_training.Constants;
+import bandrol_training.model.GroundTruth;
+import bandrol_training.model.Utils;
 import org.apache.commons.math3.random.EmpiricalDistribution;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
+import org.opencv.core.*;
 import org.opencv.ml.Ml;
+import org.opencv.ml.ParamGrid;
 import org.opencv.ml.SVM;
 import org.opencv.ml.StatModel;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SVMEnsemble extends EnsembleModel
 {
@@ -47,11 +45,11 @@ public class SVMEnsemble extends EnsembleModel
         for(StatModel statModel : models)
         {
             SVM svm = (SVM)statModel;
-            Mat responses = new Mat();
-            svm.predict(samples, responses, 0);
-            for(int i=0;i<responses.rows();i++)
+            Mat labelResponses = new Mat();
+            svm.predict(samples, labelResponses, 0);
+            for(int i=0;i<labelResponses.rows();i++)
             {
-                int responseLabel = (int)responses.get(i,0)[0];
+                int responseLabel = (int)labelResponses.get(i,0)[0];
                 int labelVoteCount = (int)voteTable.get(i, responseLabel)[0];
                 voteTable.put(i, responseLabel, labelVoteCount+1);
             }
@@ -66,13 +64,13 @@ public class SVMEnsemble extends EnsembleModel
         return finalResponses;
     }
 
-    public void addModel(StatModel model, Mat trainingSamples) throws Exception
+    private void addModel(StatModel model, Mat trainingSamples, boolean convertSamples) throws Exception
     {
         // Build empirical response distribution with "samples", if this is a binary SVM ensemble.
         if(isMultiClass)
             throw new Exception("Weighted Voting is undefined for multiclass SVM Ensembles.");
         addModel(model);
-        Mat X = makeSamplesCompatible(trainingSamples);
+        Mat X = (convertSamples)?makeSamplesCompatible(trainingSamples):trainingSamples;
         Mat responses = new Mat();
         model.predict(X, responses, StatModel.RAW_OUTPUT);
         EmpiricalDistribution marginDistribution = new EmpiricalDistribution();
@@ -130,7 +128,39 @@ public class SVMEnsemble extends EnsembleModel
         }
     }
 
-    private Mat predictLabels(Mat samples)
+    public void trainSingleModel(Mat samples, Mat labels)
+    {
+        SVM svm = SVM.create();
+        TermCriteria terminationCriteria = new TermCriteria(TermCriteria.COUNT + TermCriteria.EPS,
+                1000, 1e-3 );
+        svm.setKernel(SVM.LINEAR);
+        ParamGrid C_grid = SVM.getDefaultGridPtr(SVM.C);
+        ParamGrid gamma_grid = ParamGrid.create(0, 0,0);
+        ParamGrid p_grid = ParamGrid.create(0, 0,0);
+        ParamGrid nu_grid = ParamGrid.create(0, 0,0);
+        ParamGrid coeff_grid = ParamGrid.create(0, 0,0);
+        ParamGrid degree_grid = ParamGrid.create(0, 0,0);
+        Mat compatibleSamples = makeSamplesCompatible(samples);
+        svm.trainAuto(compatibleSamples, Ml.ROW_SAMPLE, labels, 10,
+                C_grid, gamma_grid, p_grid, nu_grid,
+                coeff_grid,degree_grid,false);
+        addModel(svm);
+//        if(this.isMultiClass)
+//            addModel(svm);
+//        else
+//        {
+//            try
+//            {
+//                addModel(svm, compatibleSamples, false);
+//            }
+//            catch (Exception e)
+//            {
+//                e.printStackTrace();
+//            }
+//        }
+    }
+
+    public Mat predictLabels(Mat samples)
     {
         List<Mat> responses = new ArrayList<>();
         for(StatModel statModel : models)
@@ -145,7 +175,7 @@ public class SVMEnsemble extends EnsembleModel
         return combinedResponseMatrix;
     }
 
-    private Mat predictMargins(Mat samples)
+    public Mat predictMargins(Mat samples)
     {
         List<Mat> margins = new ArrayList<>();
         for(StatModel statModel : models)
@@ -162,10 +192,10 @@ public class SVMEnsemble extends EnsembleModel
 
     private Mat makeSamplesCompatible(Mat samples)
     {
-        Mat samplesT = new Mat();
-        Core.transpose(samples, samplesT);
+//        Mat samplesT = new Mat();
+//        Core.transpose(samples, samplesT);
         Mat samplesT32f = new Mat();
-        samplesT.convertTo(samplesT32f, CvType.CV_32F);
+        samples.convertTo(samplesT32f, CvType.CV_32F);
         return samplesT32f;
     }
 }

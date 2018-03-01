@@ -25,4 +25,6 @@ public abstract class EnsembleModel {
     abstract public void loadEnsemble(int ensembleCount, String label);
 
     abstract public void saveEnsemble(String token);
+
+    abstract public void trainSingleModel(Mat samples, Mat labels);
 }
