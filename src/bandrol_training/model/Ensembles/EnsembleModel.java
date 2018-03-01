@@ -8,7 +8,7 @@ import java.util.List;
 public abstract class EnsembleModel {
     protected List<StatModel> models;
 
-    int getModelCount()
+    public int getModelCount()
     {
         return models.size();
     }
@@ -27,4 +27,8 @@ public abstract class EnsembleModel {
     abstract public void saveEnsemble(String token);
 
     abstract public void trainSingleModel(Mat samples, Mat labels);
+
+    abstract public Mat predictLabels(Mat samples);
+
+    abstract public Mat predictConfidences(Mat samples);
 }

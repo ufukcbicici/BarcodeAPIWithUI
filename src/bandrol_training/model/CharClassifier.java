@@ -6,6 +6,7 @@ import org.opencv.core.*;
 import org.opencv.ml.Ml;
 import org.opencv.ml.ParamGrid;
 import org.opencv.ml.SVM;
+import org.opencv.ml.StatModel;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -17,19 +18,18 @@ public class CharClassifier
     public static SVMEnsemble train(int ensembleCount, double sampleRatio, double minNumOfSamplesPerClass,
                                     double validationRatio)
     {
-        SVMEnsemble svmEnsemble = new SVMEnsemble(true);
         String inclusionStatement = "FileName IN" + Utils.getFileSelectionClause();
-        String exclusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
+        String exlusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
         String includeClause = Utils.getFilterClause(
                 "Label != -1",
-                "ABS(VerticalDisplacement) <= 1",
-                "ABS(HorizontalDisplacement) <= 1",
+                "ABS(VerticalDisplacement) <= 2",
+                "ABS(HorizontalDisplacement) <= 2",
                 inclusionStatement);
         String excludeClause = Utils.getFilterClause(
                 "Label != -1",
                 "ABS(VerticalDisplacement) <= 1",
                 "ABS(HorizontalDisplacement) <= 1",
-                exclusionStatement);
+                exlusionStatement);
         List<GroundTruth> allTrainingSamples = DbUtils.readGroundTruths(excludeClause);
         List<GroundTruth> allTestSamples = DbUtils.readGroundTruths(includeClause);
         System.out.println("All Training Samples:" + allTrainingSamples.size());
@@ -49,82 +49,81 @@ public class CharClassifier
                 samplesPerClass.put(gt.label, new ArrayList<>());
             samplesPerClass.get(gt.label).add(gt);
         }
-//        // Apply bagging
-//        SVMEnsemble svmEnsemble = new SVMEnsemble();
-//        for(int currEnsembleIndex = 0; currEnsembleIndex < ensembleCount; currEnsembleIndex++)
-//        {
-//            System.out.println("***********SVM "+currEnsembleIndex+"***********");
-//            List<Mat> sampleMatrices = new ArrayList<>();
-//            List<Mat> labels = new ArrayList<>();
-//            // Pick samples from each class
-//            Set<String> targetLabels = Set.of("0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F","G","H","J",
-//                    "K","M","N","P","Q","R","S","T","V","W","X","Y","Z");
-//            for(String character : targetLabels)
-//            {
-//                if(!samplesPerClass.containsKey(character))
-//                    continue;
-//                List<GroundTruth> classSamples = samplesPerClass.get(character);
-//                int classSampleCount = classSamples.size();
-//                int subsampleCount = (int)Math.max(sampleRatio * (double)classSampleCount, minNumOfSamplesPerClass);
-//                Collections.shuffle(classSamples);
-//                List<GroundTruth> classSubset = classSamples.subList(0, subsampleCount);
-//                Mat classFeaturesCombined = Utils.getFeatureMatrixFromGroundTruths(classSubset);
-//                Mat labelMat = new Mat(subsampleCount, 1, CvType. CV_32SC1);
-//                labelMat.setTo(new Scalar(Constants.CHAR_TO_LABEL_MAP.get(character)));
-//                // System.out.println(labelMat.dump());
-//                sampleMatrices.add(classFeaturesCombined);
-//                labels.add(labelMat);
-//            }
-//            Mat totalSampleMatrix = new Mat();
-//            Mat totalLabelMatrix = new Mat();
-//            Core.vconcat(sampleMatrices, totalSampleMatrix);
-//            Core.vconcat(labels, totalLabelMatrix);
-//            // Train SVM
-//            ParamGrid C_grid = SVM.getDefaultGridPtr(SVM.C);
-//            // ParamGrid gamma_grid = ParamGrid.create(0, 0,0);
-//            ParamGrid gamma_grid = SVM.getDefaultGridPtr(SVM.GAMMA);
-//            ParamGrid p_grid = ParamGrid.create(0, 0,0);
-//            ParamGrid nu_grid = ParamGrid.create(0, 0,0);
-//            ParamGrid coeff_grid = ParamGrid.create(0, 0,0);
-//            ParamGrid degree_grid = ParamGrid.create(0, 0,0);
-//            SVM svm = SVM.create();
-////            TermCriteria terminationCriteria = new TermCriteria(TermCriteria.COUNT + TermCriteria.EPS,
-////                    1000, 1e-3 );
-//            svm.setKernel(SVM.RBF);
-//            System.out.println("Training "+currEnsembleIndex+". SVM of the ensemble.");
-//            Mat totalSampleMatrixFloat = new Mat();
-//            totalSampleMatrix.convertTo(totalSampleMatrixFloat, CvType.CV_32F);
-//            svm.trainAuto(totalSampleMatrixFloat, Ml.ROW_SAMPLE, totalLabelMatrix, 10,
-//                    C_grid, gamma_grid, p_grid, nu_grid,
-//                    coeff_grid,degree_grid,false);
-//            System.out.println("Training of the SVM finished.");
-//            svm.save(Constants.CLASSIFIER_SVM_PATH + "svm_"+currEnsembleIndex);
-//            svmEnsemble.add(svm);
-//            //Measure training set performance
-//            double trainingAccuracy = predict(svm, trainingSet, targetLabels);
-//            System.out.println("Training Accuracy:"+trainingAccuracy);
-//            //Measure validation set performance
-//            if(validationSet.size() > 0)
-//            {
-//                double validationAccuracy = predict(svm, validationSet, targetLabels);
-//                System.out.println("Validation Accuracy:"+validationAccuracy);
-//            }
-//            //Measure test set performance
-//            double testAccuracy = predict(svm, allTestSamples, targetLabels);
-//            System.out.println("Test Accuracy:"+testAccuracy);
-//            //Measure unrotated set performance
-//            double unrotatedTestAccuracy = predict(svm, unrotatedTestSamples, targetLabels);
-//            System.out.println("Unrotated Test Accuracy:"+unrotatedTestAccuracy);
-//            System.out.println("***********SVM "+currEnsembleIndex+"***********");
-//        }
-//        predict(svmEnsemble, trainingSet);
-//        if(validationSet.size() > 0)
-//            predict(svmEnsemble, validationSet);
-//        predict(svmEnsemble, allTestSamples);
-//        //Measure unrotated set performance
-//        predict(svmEnsemble, unrotatedTestSamples);
-//        return svmEnsemble;
-        return  svmEnsemble;
+        // Apply bagging
+        SVMEnsemble svmEnsemble = new SVMEnsemble(true);
+        for(int currEnsembleIndex = 0; currEnsembleIndex < ensembleCount; currEnsembleIndex++)
+        {
+            System.out.println("***********SVM "+currEnsembleIndex+"***********");
+            List<Mat> sampleMatrices = new ArrayList<>();
+            List<Mat> labels = new ArrayList<>();
+            // Pick samples from each class
+            Set<String> targetLabels = Set.of("0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F","G","H","J",
+                    "K","M","N","P","Q","R","S","T","V","W","X","Y","Z");
+            for(String character : targetLabels)
+            {
+                if(!samplesPerClass.containsKey(character))
+                    continue;
+                List<GroundTruth> classSamples = samplesPerClass.get(character);
+                int classSampleCount = classSamples.size();
+                int subsampleCount = (int)Math.max(sampleRatio * (double)classSampleCount, minNumOfSamplesPerClass);
+                Collections.shuffle(classSamples);
+                List<GroundTruth> classSubset = classSamples.subList(0, subsampleCount);
+                Mat classFeaturesCombined = Utils.getFeatureMatrixFromGroundTruths(classSubset);
+                Mat labelMat = new Mat(subsampleCount, 1, CvType. CV_32SC1);
+                labelMat.setTo(new Scalar(Constants.CHAR_TO_LABEL_MAP.get(character)));
+                // System.out.println(labelMat.dump());
+                sampleMatrices.add(classFeaturesCombined);
+                labels.add(labelMat);
+            }
+            Mat totalSampleMatrix = new Mat();
+            Mat totalLabelMatrix = new Mat();
+            Core.vconcat(sampleMatrices, totalSampleMatrix);
+            Core.vconcat(labels, totalLabelMatrix);
+            // Train SVM
+            ParamGrid C_grid = SVM.getDefaultGridPtr(SVM.C);
+            ParamGrid gamma_grid = ParamGrid.create(0, 0,0);
+            // ParamGrid gamma_grid = SVM.getDefaultGridPtr(SVM.GAMMA);
+            ParamGrid p_grid = ParamGrid.create(0, 0,0);
+            ParamGrid nu_grid = ParamGrid.create(0, 0,0);
+            ParamGrid coeff_grid = ParamGrid.create(0, 0,0);
+            ParamGrid degree_grid = ParamGrid.create(0, 0,0);
+            SVM svm = SVM.create();
+//            TermCriteria terminationCriteria = new TermCriteria(TermCriteria.COUNT + TermCriteria.EPS,
+//                    1000, 1e-3 );
+            svm.setKernel(SVM.LINEAR);
+            System.out.println("Training "+currEnsembleIndex+". SVM of the ensemble.");
+            Mat totalSampleMatrixFloat = new Mat();
+            totalSampleMatrix.convertTo(totalSampleMatrixFloat, CvType.CV_32F);
+            svm.trainAuto(totalSampleMatrixFloat, Ml.ROW_SAMPLE, totalLabelMatrix, 10,
+                    C_grid, gamma_grid, p_grid, nu_grid,
+                    coeff_grid,degree_grid,false);
+            System.out.println("Training of the SVM finished.");
+            svm.save(Constants.CLASSIFIER_SVM_PATH + "svm_"+currEnsembleIndex);
+            //svmEnsemble.add(svm);
+            //Measure training set performance
+            double trainingAccuracy = predict(svm, trainingSet, targetLabels);
+            System.out.println("Training Accuracy:"+trainingAccuracy);
+            //Measure validation set performance
+            if(validationSet.size() > 0)
+            {
+                double validationAccuracy = predict(svm, validationSet, targetLabels);
+                System.out.println("Validation Accuracy:"+validationAccuracy);
+            }
+            //Measure test set performance
+            double testAccuracy = predict(svm, allTestSamples, targetLabels);
+            System.out.println("Test Accuracy:"+testAccuracy);
+            //Measure unrotated set performance
+            double unrotatedTestAccuracy = predict(svm, unrotatedTestSamples, targetLabels);
+            System.out.println("Unrotated Test Accuracy:"+unrotatedTestAccuracy);
+            System.out.println("***********SVM "+currEnsembleIndex+"***********");
+        }
+        predict(svmEnsemble, trainingSet);
+        if(validationSet.size() > 0)
+            predict(svmEnsemble, validationSet);
+        predict(svmEnsemble, allTestSamples);
+        //Measure unrotated set performance
+        predict(svmEnsemble, unrotatedTestSamples);
+        return svmEnsemble;
     }
 
     public static double predict(SVM svm, List<GroundTruth> predictionList, Set<String> targetLabels)
@@ -162,12 +161,29 @@ public class CharClassifier
 //        Mat validationResponses = new Mat();
 //        ensemble.getSvmList().get(0).predict(featureMatrixFloat, validationResponses, 0);
         Mat responses = ensemble.predictByVoting(featureMatrixFloat);
+        Map<String, Integer> charTotalMap = new HashMap<>();
+        Map<String, Integer> charCorrectMap = new HashMap<>();
         int totalCorrectCount = 0;
         for(int i=0;i<predictionList.size();i++)
         {
             int trueLabel = Constants.CHAR_TO_LABEL_MAP.get(predictionList.get(i).label);
+            if(!charTotalMap.containsKey(predictionList.get(i).label))
+                charTotalMap.put(predictionList.get(i).label, 0);
+            int currTotal = charTotalMap.get(predictionList.get(i).label);
+            charTotalMap.put(predictionList.get(i).label, currTotal+1);
             if(trueLabel == responses.get(i,0)[0])
+            {
                 totalCorrectCount++;
+                if(!charCorrectMap.containsKey(predictionList.get(i).label))
+                    charCorrectMap.put(predictionList.get(i).label, 0);
+                int currCorrect = charCorrectMap.get(predictionList.get(i).label);
+                charCorrectMap.put(predictionList.get(i).label, currCorrect+1);
+            }
+        }
+        for(String character : charTotalMap.keySet())
+        {
+            double accuracy = (double)charCorrectMap.get(character) / (double)charTotalMap.get(character);
+            System.out.println("Character:" + character+ " Total:"+charTotalMap.get(character)+" Accuracy:"+accuracy);
         }
 
 //        Mat responses = ensemble.predictByVoting(featureMatrixFloat);

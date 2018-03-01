@@ -86,7 +86,7 @@ public class SVMEnsemble extends EnsembleModel
             throw new Exception("Weighted Voting is undefined for multiclass SVM Ensembles.");
         Mat samplesT32f = makeSamplesCompatible(samples);
         Mat labelMatrix = predictLabels(samplesT32f);
-        Mat marginMatrix = predictMargins(samplesT32f);
+        Mat marginMatrix = predictConfidences(samplesT32f);
         Mat resultMatrix = new Mat(samplesT32f.rows(), 2, CvType.CV_64F);
         for(int i=0;i<samples.rows();i++)
         {
@@ -117,6 +117,24 @@ public class SVMEnsemble extends EnsembleModel
             SVM svm = SVM.load(Constants.OBJECT_DETECTOR_FOLDER_PATH + "object_detector_for_" + label +"_svm_"+i);
             assert svm != null;
             this.models.add(svm);
+        }
+    }
+
+    // Load all SVMs it can find.
+    public void loadEnsemble(String label)
+    {
+        int currSVMIndex = 0;
+        while (true)
+        {
+            String svmPath = Constants.OBJECT_DETECTOR_FOLDER_PATH + "object_detector_for_" + label +"_svm_"+currSVMIndex;
+            boolean doesExist = Utils.checkFileExist(svmPath);
+            if(!doesExist)
+            {
+                break;
+            }
+            SVM svm = SVM.load(svmPath);
+            this.models.add(svm);
+            currSVMIndex++;
         }
     }
 
@@ -175,7 +193,7 @@ public class SVMEnsemble extends EnsembleModel
         return combinedResponseMatrix;
     }
 
-    public Mat predictMargins(Mat samples)
+    public Mat predictConfidences(Mat samples)
     {
         List<Mat> margins = new ArrayList<>();
         for(StatModel statModel : models)

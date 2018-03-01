@@ -33,96 +33,79 @@ public class SweepAllCharsDetector extends DetectionMethod {
         this.classifierType = classifierType;
     }
 
-    public void init(int ensembleCount) throws ExecutionControl.NotImplementedException {
-//        for(String label : Constants.CURR_LABELS)
-//        {
-//            switch (this.classifierType)
-//            {
-//                case SVM:
-//                    SVMEnsemble svmEnsemble = new SVMEnsemble();
-//                    svmEnsemble.loadEnsemble(ensembleCount, label);
-//                    ensembleMap.put(label, svmEnsemble);
-//                    break;
-//                case MLP:
-//                    throw new ExecutionControl.NotImplementedException("MLP not implemented");
-//            }
-//        }
+    public void init() throws ExecutionControl.NotImplementedException {
+        for(String label : Constants.CURR_LABELS)
+        {
+            switch (this.classifierType)
+            {
+                case SVM:
+                    SVMEnsemble svmEnsemble = new SVMEnsemble(false);
+                    svmEnsemble.loadEnsemble(label);
+                    ensembleMap.put(label, svmEnsemble);
+                    break;
+                case MLP:
+                    throw new ExecutionControl.NotImplementedException("MLP not implemented");
+            }
+        }
+    }
+
+    private List<Detection> getLabelDetections(
+            String label,
+            Table<Integer, Integer, Mat> featureTable,
+            int sliding_window_width,
+            int sliding_window_height,
+            double nms_iou_threshold) {
+        EnsembleModel ensemble = ensembleMap.get(label);
+        List<Detection> detectionList = new ArrayList<>();
+        for (Table.Cell c : featureTable.cellSet()) {
+            Mat feature = (Mat) c.getValue();
+            Mat predictedLabels = ensemble.predictLabels(feature);
+            Mat predictedMargins = ensemble.predictConfidences(feature);
+            double totalMarginResponse = 0.0;
+            double totalVote = 0.0;
+            assert predictedLabels.cols() == predictedMargins.cols();
+            for (int j = 0; j < predictedLabels.cols(); j++) {
+                double predictedLabel = predictedLabels.get(0, j)[0];
+                totalVote += predictedLabel;
+                totalMarginResponse += Math.abs(predictedMargins.get(0, j)[0]) * predictedLabel;
+            }
+            double avgMarginResponse = totalMarginResponse / (double) ensemble.getModelCount();
+            if (totalVote > 0) {
+                Detection detection = new Detection(
+                        new Rect((int) c.getColumnKey(), (int) c.getRowKey(),
+                                sliding_window_width, sliding_window_height), avgMarginResponse, label);
+                detectionList.add(detection);
+            }
+        }
+        List<Detection> maxima = nonMaximaSuppression(detectionList, nms_iou_threshold);
+        return maxima;
     }
 
     public void detect(Mat img, int sliding_window_width, int sliding_window_height,
-                                double sourceImgWidth)
+                                double sourceImgWidth, double nms_iou_threshold)
     {
         Mat canvasImg = img.clone();
         Table<Integer, Integer, Mat> featureTable =
                 extractFeatures(img, sliding_window_width, sliding_window_height, sourceImgWidth);
-        List<Detection> listOfDetections = new ArrayList<>();
+        List<Detection> listOfMaximaForAllLabels = new ArrayList<>();
         for(String label : Constants.CURR_LABELS) {
             if (!ensembleMap.containsKey(label))
                 continue;
-            EnsembleModel ensembleModel = ensembleMap.get(label);
-            for(Table.Cell c : featureTable.cellSet())
-            {
-                Mat feature = new Mat();
-                Core.transpose((Mat) c.getValue(), feature);
-                Mat feature32f = new Mat();
-                feature.convertTo(feature32f, CvType.CV_32F);
-
-
-            }
-            // ensembleModel.
-            // ensembleModel.d
+            listOfMaximaForAllLabels.addAll(getLabelDetections(label, featureTable,
+                    sliding_window_width, sliding_window_height, nms_iou_threshold));
         }
-
-//        Table<Integer, Integer, Mat> featureTable = extractFeatures(
-//                img,
-//                sliding_window_width,
-//                sliding_window_height,
-//                source_width);
-//        List<Detection> listOfDetections = new ArrayList<>();
-//        for(Table.Cell c : featureTable.cellSet())
-//        {
-//            Mat hogFeatureT = new Mat();
-//            Core.transpose((Mat) c.getValue(), hogFeatureT);
-//            Mat hog32f = new Mat();
-//            hogFeatureT.convertTo(hog32f, CvType.CV_32F);
-//            List<Mat> predictedLabels = svmEnsemble.predictLabels(hog32f);
-//            List<Mat> predictedMargins = svmEnsemble.predictMargins(hog32f);
-//            double totalMarginResponse = 0.0;
-//            double totalVote = 0.0;
-//            for(int svmIndex=0;svmIndex<svmEnsemble.getSvmList().size();svmIndex++)
-//            {
-//                double predictedLabel = predictedLabels.get(svmIndex).get(0,0)[0];
-//                totalVote += predictedLabel;
-//                totalMarginResponse += Math.abs(predictedMargins.get(svmIndex).get(0,0)[0])*predictedLabel;
-//            }
-//            double avgMarginResponse = totalMarginResponse / (double)svmEnsemble.getSvmList().size();
-//            if(totalVote > 0)
-//            {
-//                Detection detection = new Detection(
-//                        new Rect((int) c.getColumnKey(), (int) c.getRowKey(),
-//                                sliding_window_width, sliding_window_height), avgMarginResponse);
-//                listOfDetections.add(detection);
-//            }
-//        }
-//        List<Detection> maxima = nonMaximaSuppression(listOfDetections, nms_iou_threshold);
-//        for (Detection dtc : maxima) {
-//            Rect r = dtc.getRect();
-//            Imgproc.rectangle(resultImg, new Point(r.x, r.y),
-//                    new Point(r.x + r.width - 1, r.y + r.height - 1),
-//                    new Scalar(0, 0, 255));
-//            int font = Core.FONT_HERSHEY_COMPLEX;
-//            DecimalFormat df2 = new DecimalFormat(".##");
-//            String doubleFormatted = df2.format(dtc.getResponse());
-//            Imgproc.putText(resultImg, doubleFormatted, new Point(r.x, r.y), font,
-//                    0.4,new Scalar(0,255,0),1);
-//        }
-//        String fileName = Utils.getNonExistingFileName(DETECTIONPATH + "detection_result.png", ".png");
-//        Imgcodecs.imwrite(fileName, resultImg);
-//        Utils.showImageInPopup(Utils.matToBufferedImage(resultImg, null));
-//        return maxima;
-
-
-
-
+        List<Detection> ultimateMaxima = nonMaximaSuppression(listOfMaximaForAllLabels, nms_iou_threshold);
+        for (Detection dtc : ultimateMaxima) {
+            Rect r = dtc.getRect();
+            Imgproc.rectangle(canvasImg, new Point(r.x, r.y),
+                    new Point(r.x + r.width - 1, r.y + r.height - 1),
+                    new Scalar(0, 0, 255));
+            int font = Core.FONT_HERSHEY_PLAIN;
+            Imgproc.putText(canvasImg, dtc.getLabel(), new Point(r.x + 5, r.y + 10), font,
+                    1.0,new Scalar(0,255,0),1);
+        }
+        String fileName = Utils.getNonExistingFileName(DETECTIONPATH + "final_detection", ".png");
+        Imgcodecs.imwrite(fileName, canvasImg);
+        Utils.showImageInPopup(Utils.matToBufferedImage(canvasImg, null));
     }
 }

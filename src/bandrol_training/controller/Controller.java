@@ -132,9 +132,9 @@ public class Controller {
     // private Detector1 detector1;
 
 
-    private int objectDetectorEnsembleCount = 1;
+    private int objectDetectorEnsembleCount = 5;
     private int charClassifierEnsembleCount = 21;
-    private String charToProcess = "0";
+    private String charToProcess = "J";
 
     public Controller()
     {
