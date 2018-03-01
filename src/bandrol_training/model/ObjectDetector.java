@@ -216,9 +216,9 @@ public class ObjectDetector {
         String exlusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
         String positiveFilterClause = Utils.getFilterClause(
                 "Label = "+charToTrain,
-                "ABS(VerticalDisplacement) < 3",
-                "ABS(HorizontalDisplacement) < 3",
-                "ABS(Rotation) < 6",
+                "ABS(VerticalDisplacement) < 2",
+                "ABS(HorizontalDisplacement) < 2",
+                "ABS(Rotation) < 3",
                 exlusionStatement);
         String negativeFilterClause = Utils.getFilterClause(
                 "Label != "+charToTrain,

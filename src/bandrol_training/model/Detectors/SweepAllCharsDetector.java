@@ -89,6 +89,7 @@ public class SweepAllCharsDetector extends DetectionMethod {
                 extractFeatures(img, sliding_window_width, sliding_window_height, sourceImgWidth);
         List<Detection> listOfMaximaForAllLabels = new ArrayList<>();
         for(String label : Constants.CURR_LABELS) {
+            System.out.println("Processing Label:"+label);
             if (!ensembleMap.containsKey(label))
                 continue;
             listOfMaximaForAllLabels.addAll(getLabelDetections(label, featureTable,
