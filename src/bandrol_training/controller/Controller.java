@@ -134,7 +134,7 @@ public class Controller {
 
     private int objectDetectorEnsembleCount = 5;
     private int charClassifierEnsembleCount = 21;
-    private String charToProcess = "J";
+    private String charToProcess = "R";
 
     public Controller()
     {

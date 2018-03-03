@@ -22,8 +22,8 @@ import static bandrol_training.Constants.OBJECT_DETECTOR_FOLDER_PATH;
 public class ObjectDetector {
     // private static double negativeMaxIoU = 0.8;
     private static SVM preLoadedSvm = null;
-    private static double positiveRatio = 0.075;
-    private static double negativeRatio = 0.05;
+    private static double positiveRatio = 0.025;
+    private static double negativeRatio = 0.01;
     private static Map<String, SVM> detectorMap;
     static {
         detectorMap = new HashMap<>();
@@ -104,7 +104,7 @@ public class ObjectDetector {
             if (object_sign * signedDistance > 0) {
                 Detection detection = new Detection(
                         new Rect((int) c.getColumnKey(), (int) c.getRowKey(), sliding_window_width, sliding_window_height),
-                        -signedDistance, "X");
+                        -signedDistance);
                 listOfDetections.add(detection);
             }
         }
@@ -169,7 +169,7 @@ public class ObjectDetector {
 //                e.printStackTrace();
 //            }
             Mat predictedLabels = svmEnsemble.predictLabels(feature);
-            Mat predictedMargins = svmEnsemble.predictConfidences(feature);
+            Mat predictedMargins = svmEnsemble.predictMargins(feature);
             double totalMarginResponse = 0.0;
             double totalVote = 0.0;
             assert predictedLabels.cols() == predictedMargins.cols();
@@ -184,7 +184,7 @@ public class ObjectDetector {
             {
                 Detection detection = new Detection(
                         new Rect((int) c.getColumnKey(), (int) c.getRowKey(),
-                                sliding_window_width, sliding_window_height), avgMarginResponse, "X");
+                                sliding_window_width, sliding_window_height), avgMarginResponse);
                 listOfDetections.add(detection);
             }
         }
@@ -234,9 +234,7 @@ public class ObjectDetector {
             Collections.shuffle(allPositiveSamples);
             Collections.shuffle(allNegativeSamples);
             int positiveSampleCount = Math.min(2000, allPositiveSamples.size());//(int)Math.round((double)allPositiveSamples.size() * positiveRatio);
-            int negativeSampleCount = (int)(10 * positiveSampleCount);//10 * positiveSampleCount;
-//            int positiveSampleCount = (int)Math.round((double)allPositiveSamples.size() * positiveRatio);
-//            int negativeSampleCount = 10 * positiveSampleCount;
+            int negativeSampleCount = 20 * positiveSampleCount;//10 * positiveSampleCount;
             //int negativeSampleCount = (int)Math.round((double)allNegativeSamples.size() * negativeRatio);
             List<GroundTruth> positiveSubset = allPositiveSamples.subList(0, positiveSampleCount);
             List<GroundTruth> negativeSubset = allNegativeSamples.subList(0, negativeSampleCount);
