@@ -104,7 +104,7 @@ public class ObjectDetector {
             if (object_sign * signedDistance > 0) {
                 Detection detection = new Detection(
                         new Rect((int) c.getColumnKey(), (int) c.getRowKey(), sliding_window_width, sliding_window_height),
-                        -signedDistance);
+                        -signedDistance,"X");
                 listOfDetections.add(detection);
             }
         }
@@ -169,7 +169,7 @@ public class ObjectDetector {
 //                e.printStackTrace();
 //            }
             Mat predictedLabels = svmEnsemble.predictLabels(feature);
-            Mat predictedMargins = svmEnsemble.predictMargins(feature);
+            Mat predictedMargins = svmEnsemble.predictConfidences(feature);
             double totalMarginResponse = 0.0;
             double totalVote = 0.0;
             assert predictedLabels.cols() == predictedMargins.cols();
@@ -184,7 +184,7 @@ public class ObjectDetector {
             {
                 Detection detection = new Detection(
                         new Rect((int) c.getColumnKey(), (int) c.getRowKey(),
-                                sliding_window_width, sliding_window_height), avgMarginResponse);
+                                sliding_window_width, sliding_window_height), avgMarginResponse,"X");
                 listOfDetections.add(detection);
             }
         }
@@ -213,18 +213,18 @@ public class ObjectDetector {
     {
         String charToTrain = "\"" + character + "\"";
         double upperRatio = sourceImgWidth * Constants.QR_RATIO;
-        String exlusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
+        String exclusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
         String positiveFilterClause = Utils.getFilterClause(
                 "Label = "+charToTrain,
                 "ABS(VerticalDisplacement) < 2",
                 "ABS(HorizontalDisplacement) < 2",
                 "ABS(Rotation) < 3",
-                exlusionStatement);
+                exclusionStatement);
         String negativeFilterClause = Utils.getFilterClause(
                 "Label != "+charToTrain,
                 "YCoord > " + upperRatio,
                 "IoUWithClosestGT < " +negativeMaxIoU,
-                exlusionStatement);
+                exclusionStatement);
         List<GroundTruth> allPositiveSamples = DbUtils.readGroundTruths(positiveFilterClause);
         List<GroundTruth> allNegativeSamples = DbUtils.readGroundTruths(negativeFilterClause);
         SVMEnsemble svmEnsemble = new SVMEnsemble(false);

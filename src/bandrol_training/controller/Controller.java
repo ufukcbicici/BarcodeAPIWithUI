@@ -5,6 +5,7 @@ import bandrol_training.model.*;
 import bandrol_training.model.Algorithm;
 // import bandrol_training.model.Detectors.Detector1;
 import bandrol_training.model.Detectors.SweepAllCharsDetector;
+import bandrol_training.post_processing.ProbabilisticPostProcesser;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -162,6 +163,12 @@ public class Controller {
                 "0","1","2","3","4","5","6","7","8","9"
         );
         label_selection_cmbox.getSelectionModel().select("A");
+    }
+
+    @FXML
+    public void run_train_post_processer(ActionEvent actionEvent)
+    {
+        ProbabilisticPostProcesser.train(2);
     }
 
     @FXML
