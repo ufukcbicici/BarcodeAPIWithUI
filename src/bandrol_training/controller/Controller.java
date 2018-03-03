@@ -4,6 +4,7 @@ import bandrol_training.Constants;
 import bandrol_training.model.*;
 import bandrol_training.model.Algorithm;
 // import bandrol_training.model.Detectors.Detector1;
+import bandrol_training.model.Detectors.SweepAllCharsDetector;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -128,13 +129,14 @@ public class Controller {
     private Button method_0_btn;
     @FXML
     private Button method_1_btn;
+    private SweepAllCharsDetector detector;
 
     // private Detector1 detector1;
 
 
     private int objectDetectorEnsembleCount = 5;
     private int charClassifierEnsembleCount = 21;
-    private String charToProcess = "R";
+    private String charToProcess = "9";
 
     public Controller()
     {
@@ -143,6 +145,12 @@ public class Controller {
         listOfClickPoints = new ArrayList<>();
         listOfImagePoints = new ArrayList<>();
         LabelingStateContainer.reset();
+        detector = new SweepAllCharsDetector(ClassifierType.SVM);
+        try {
+            detector.init();
+        } catch (ExecutionControl.NotImplementedException e) {
+            e.printStackTrace();
+        }
         // detector1 = null;
     }
 
@@ -159,7 +167,35 @@ public class Controller {
     @FXML
     public void run_method_0(ActionEvent actionEvent)
     {
-
+        List<String> testImages = Utils.getAllTestImageNames();
+        double sliding_window_width = Double.parseDouble(sliding_window_width_tf.getText());
+        double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
+        double nms_iou_threshold = Double.parseDouble(nms_iou_threshold_txt_fld.getText());
+        for(String fileName : testImages)
+        {
+            String path = Constants.TEST_IMAGES + fileName;
+            System.out.println("Processing File:"+path);
+            Mat image = Imgcodecs.imread(path, Imgcodecs.CV_LOAD_IMAGE_COLOR);
+            Mat resizedSource = new Mat();
+            double referenceWidth = Double.parseDouble(reference_width_tf.getText());
+            double resizeRatio = referenceWidth / image.cols();
+            Imgproc.resize(image, resizedSource,
+                    new Size(resizeRatio*image.cols(),resizeRatio*image.rows()));
+            detector.detect(resizedSource,
+                    (int)sliding_window_width,
+                    (int)sliding_window_height,
+                    Double.parseDouble(reference_width_tf.getText()),
+                    nms_iou_threshold);
+//            ObjectDetector.detectWithEnsembles(
+//                    objectDetectorEnsembleCount,
+//                    charToProcess,
+//                    resizedSource,
+//                    (int)sliding_window_width,
+//                    (int)sliding_window_height,
+//                    Double.parseDouble(nms_iou_threshold_txt_fld.getText()),
+//                    Double.parseDouble(object_sign_txt_field.getText()),
+//                    Double.parseDouble(reference_width_tf.getText()));
+        }
     }
 
     @FXML
