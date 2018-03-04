@@ -118,10 +118,31 @@ public class ProbabilisticPostProcesser {
             gaussians[i] = new MultivariateNormalDistribution(mean, covMatrix);
         }
         // Learn horizontal and vertical steps between bounding boxes as linear regressions.
-        // Step 1): Horizontal
-
+        // Step 1): Horizontal, (x0,y0) -> (x0)
+        Mat[] designAndTargetHorizontalX = getDesignAndTargetMatrices(horizontalNeighbors, true);
+        Mat[] designAndTargetHorizontalY = getDesignAndTargetMatrices(horizontalNeighbors, false);
+        Mat[] designAndTargetVerticalX   = getDesignAndTargetMatrices(verticalNeighbors, true);
+        Mat[] designAndTargetVerticalY   = getDesignAndTargetMatrices(verticalNeighbors, false);
 
         System.out.println("XXX");
+    }
+
+    private Mat[] getDesignAndTargetMatrices(List<List<GroundTruth>> pairs, boolean regressXcoord)
+    {
+        int sampleCount = pairs.size();
+        Mat designMatrix = new Mat(sampleCount, 3, CvType.CV_64F);
+        Mat targetMatrix = new Mat(sampleCount, 1, CvType.CV_64F);
+        for(int i=0;i<pairs.size();i++)
+        {
+            double x = pairs.get(i).get(0).x;
+            double y = pairs.get(i).get(0).y;
+            double t = (regressXcoord) ? pairs.get(i).get(1).x : pairs.get(i).get(1).y;
+            designMatrix.put(i, 0, x);
+            designMatrix.put(i, 1, y);
+            designMatrix.put(i, 2,1.0);
+            targetMatrix.put(i, 0, t);
+        }
+        return new Mat[]{designMatrix, targetMatrix};
     }
 
     private double fitLinearRegression(Mat sample, Mat target, Mat weights)
