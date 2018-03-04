@@ -168,7 +168,8 @@ public class Controller {
     @FXML
     public void run_train_post_processer(ActionEvent actionEvent)
     {
-        ProbabilisticPostProcesser.train(2);
+        ProbabilisticPostProcesser postProcesser = new ProbabilisticPostProcesser();
+        postProcesser.train(2);
     }
 
     @FXML

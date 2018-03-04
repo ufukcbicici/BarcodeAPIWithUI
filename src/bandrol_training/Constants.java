@@ -10,6 +10,7 @@ public class Constants {
     public static final int X = 0;
     public static final int Y = 1;
     public static final int Z = 2;
+    public static final int TOTAL_CHAR_COUNT = 14;
     private static final String ROOT_PATH = "C:\\Users\\ufuk.bicici\\Desktop\\Bandrol";
     // public static final String ROOT_PATH = "C:\\Users\\ufuk.bicici\\Desktop\\Bandrol";
     public static final String DEBUGPATH = ROOT_PATH + "\\DebugPics\\";

@@ -304,7 +304,7 @@
           <children>
             <Button fx:id="method_0_btn" mnemonicParsing="false" onAction="#run_method_0" prefHeight="30.0" prefWidth="130.0" text="Detect Method 0" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
             <Button fx:id="method_1_btn" mnemonicParsing="false" onAction="#run_method_1" prefHeight="30.0" prefWidth="130.0" text="Detect Method 1" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
-            <Button fx:id="train_post_processer_txt_btn" mnemonicParsing="false" onAction="#run_train_post_processer" prefHeight="30.0" prefWidth="121.0" text="Train Post Processer" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
+            <Button fx:id="train_post_processer_txt_btn" mnemonicParsing="false" onAction="#run_train_post_processer" prefHeight="30.0" prefWidth="157.0" text="Train Post Processer" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
           </children>
           <columnConstraints>
             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
