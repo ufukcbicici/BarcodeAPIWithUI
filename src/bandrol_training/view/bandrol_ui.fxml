@@ -100,7 +100,7 @@
         <GridPane GridPane.columnIndex="5">
           <children>
             <Button fx:id="execute_pipeline_btn" minHeight="19.0" mnemonicParsing="false" onAction="#executePipeline" prefHeight="35.0" prefWidth="146.0" text="Execute Pipeline" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
-            <Button fx:id="char_classifier_btn" mnemonicParsing="false" onAction="#onCharClassifier" prefHeight="31.0" prefWidth="142.0" text="Char Classifier" GridPane.halignment="CENTER" GridPane.valignment="CENTER" />
+            <Button fx:id="char_classifier_btn" mnemonicParsing="false" onAction="#onCharClassifier" prefHeight="25.0" prefWidth="180.0" text="Char Classifier" GridPane.halignment="CENTER" GridPane.valignment="CENTER" />
           </children>
           <columnConstraints>
             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -285,10 +285,11 @@
                 <FXCollections fx:factory="observableArrayList" />
               </items>
             </ComboBox>
-            <Button mnemonicParsing="false" onAction="#onAddGroundTruth" prefHeight="30.0" prefWidth="146.0" text="Add Ground Truth" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
-            <Label fx:id="serial_num_label" text="" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
-            <Button fx:id="show_all_training_btn" mnemonicParsing="false" onAction="#onShowTrainingSamples" prefHeight="25.0" prefWidth="170.0" text="Show All Training Samples" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
-            <Button fx:id="detect_on_all_test" mnemonicParsing="false" onAction="#onTestAllImages" prefHeight="25.0" prefWidth="178.0" text="Detect on All Test Samples" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="3" GridPane.valignment="CENTER" />
+            <Button mnemonicParsing="false" onAction="#onAddGroundTruth" prefHeight="25.0" prefWidth="180.0" text="Add Ground Truth" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
+            <Label fx:id="serial_num_label" text="" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="3" GridPane.valignment="CENTER" />
+            <Button fx:id="show_all_training_btn" mnemonicParsing="false" onAction="#onShowTrainingSamples" prefHeight="25.0" prefWidth="180.0" text="Show All Training Samples" GridPane.halignment="CENTER" GridPane.rowIndex="3" GridPane.valignment="CENTER" />
+            <Button fx:id="detect_on_all_test" mnemonicParsing="false" onAction="#onTestAllImages" prefHeight="25.0" prefWidth="180.0" text="Detect on All Test Samples" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="4" GridPane.valignment="CENTER" />
+            <Label fx:id="serial_num_label" text="" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
           </children>
           <columnConstraints>
             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -298,13 +299,14 @@
             <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
             <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
             <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
           </rowConstraints>
         </GridPane>
         <GridPane prefHeight="135.0" prefWidth="220.0" GridPane.columnIndex="0" GridPane.rowIndex="2">
           <children>
-            <Button fx:id="method_0_btn" mnemonicParsing="false" onAction="#run_method_0" prefHeight="30.0" prefWidth="130.0" text="Detect Method 0" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
-            <Button fx:id="method_1_btn" mnemonicParsing="false" onAction="#run_method_1" prefHeight="30.0" prefWidth="130.0" text="Detect Method 1" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
-            <Button fx:id="train_post_processer_txt_btn" mnemonicParsing="false" onAction="#run_train_post_processer" prefHeight="30.0" prefWidth="157.0" text="Train Post Processer" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
+            <Button fx:id="method_0_btn" mnemonicParsing="false" onAction="#run_method_0" prefHeight="25.0" prefWidth="180.0" text="Detect Method 0" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="0" GridPane.valignment="CENTER" />
+            <Button fx:id="method_1_btn" mnemonicParsing="false" onAction="#run_method_1" prefHeight="25.0" prefWidth="180.0" text="Detect Method 1" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
+            <Button fx:id="train_post_processer_txt_btn" mnemonicParsing="false" onAction="#run_train_post_processer" prefHeight="25.0" prefWidth="180.0" text="Train Post Processer" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
           </children>
           <columnConstraints>
             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />

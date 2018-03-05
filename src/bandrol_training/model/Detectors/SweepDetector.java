@@ -46,33 +46,10 @@ public class SweepDetector extends Thread {
     private List<Detection> getLabelDetections(String label) {
         List<Detection> detectionList = new ArrayList<>();
         EnsembleModel ensemble = ensembleMap.get(label);
-//        for (Table.Cell c : featureTable.cellSet())
-//        {
-//            Mat feature = (Mat) c.getValue();
-//            Mat predictedLabels = ensemble.predictLabels(feature);
-//            Mat predictedMargins = ensemble.predictConfidences(feature);
-//            double totalMarginResponse = 0.0;
-//            double totalVote = 0.0;
-//            assert predictedLabels.cols() == predictedMargins.cols();
-//            for (int j = 0; j < predictedLabels.cols(); j++) {
-//                double predictedLabel = predictedLabels.get(0, j)[0];
-//                totalVote += predictedLabel;
-//                totalMarginResponse += Math.abs(predictedMargins.get(0, j)[0]) * predictedLabel;
-//            }
-//            double avgMarginResponse = totalMarginResponse / (double) ensemble.getModelCount();
-//            if (totalVote > 0) {
-//                Detection detection = new Detection(
-//                        new Rect((int) c.getColumnKey(), (int) c.getRowKey(),
-//                                sliding_window_width, sliding_window_height), avgMarginResponse, label);
-//                detectionList.add(detection);
-//            }
-//        }
         Mat predictedLabelsUnified = ensemble.predictLabels(featureMatrix);
         Mat predictedMarginsUnified = ensemble.predictConfidences(featureMatrix);
         for(Table.Cell c : rowIndexTable.cellSet())
         {
-            int rowIndex = (int)c.getRowKey();
-            int colIndex = (int)c.getColumnKey();
             int featureMatrixRowIndex = (int)c.getValue();
             double totalMarginResponse = 0.0;
             double totalVote = 0.0;
