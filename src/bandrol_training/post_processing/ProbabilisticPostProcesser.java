@@ -3,26 +3,53 @@ package bandrol_training.post_processing;
 import bandrol_training.model.DbUtils;
 import bandrol_training.model.GroundTruth;
 import bandrol_training.model.Utils;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.math3.distribution.MultivariateNormalDistribution;
 import org.opencv.core.*;
-import org.opencv.imgproc.Imgproc;
 import org.opencv.ml.EM;
 import org.opencv.ml.Ml;
 import org.opencv.ml.TrainData;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static bandrol_training.Constants.TOTAL_CHAR_COUNT;
+
+class OLSResult
+{
+    private Mat weights;
+    private double sumOfSquaredResiduals;
+    private double variance;
+
+    public OLSResult(Mat weights, double variance, double sumOfSquaredResiduals)
+    {
+        this.weights = weights;
+        this.variance = variance;
+        this.sumOfSquaredResiduals = sumOfSquaredResiduals;
+    }
+
+    public Mat getWeights() {
+        return weights;
+    }
+
+    public double getVariance() {
+        return variance;
+    }
+
+    public double getSumOfSquaredResiduals()
+    {
+        return getSumOfSquaredResiduals();
+    }
+};
 
 public class ProbabilisticPostProcesser {
 
     private int topLeftMixtureCount;
     private double [] gaussianPriors;
-    private MultivariateNormalDistribution [] gaussians;
+    private MultivariateNormalDistribution [] topLeftGaussianComponents;
+    private Mat horizontalGaussianCov;
+    private Mat inverseHorizontalGaussianCov;
+    private Mat verticalGaussianCov;
+    private Mat inverseVerticalGaussianCov;
 
     public void train(int topLeftMixtureCount)
     {
@@ -107,7 +134,7 @@ public class ProbabilisticPostProcesser {
         List<Mat> covMatrices = new ArrayList<>();
         em.getCovs(covMatrices);
         gaussianPriors = new double[topLeftMixtureCount];
-        gaussians = new MultivariateNormalDistribution[topLeftMixtureCount];
+        topLeftGaussianComponents = new MultivariateNormalDistribution[topLeftMixtureCount];
         for(int i=0;i<topLeftMixtureCount;i++)
         {
             gaussianPriors[i] = weights.get(0, i)[0];
@@ -115,15 +142,41 @@ public class ProbabilisticPostProcesser {
             double [][] covMatrix = {
                     {covMatrices.get(i).get(0,0)[0], covMatrices.get(i).get(0,1)[0]},
                     {covMatrices.get(i).get(1,0)[0], covMatrices.get(i).get(1,1)[0]}};
-            gaussians[i] = new MultivariateNormalDistribution(mean, covMatrix);
+            topLeftGaussianComponents[i] = new MultivariateNormalDistribution(mean, covMatrix);
         }
         // Learn horizontal and vertical steps between bounding boxes as linear regressions.
-        // Step 1): Horizontal, (x0,y0) -> (x0)
         Mat[] designAndTargetHorizontalX = getDesignAndTargetMatrices(horizontalNeighbors, true);
         Mat[] designAndTargetHorizontalY = getDesignAndTargetMatrices(horizontalNeighbors, false);
         Mat[] designAndTargetVerticalX   = getDesignAndTargetMatrices(verticalNeighbors, true);
         Mat[] designAndTargetVerticalY   = getDesignAndTargetMatrices(verticalNeighbors, false);
-
+        OLSResult horizontalXRes =
+                fitLinearRegression(designAndTargetHorizontalX[0], designAndTargetHorizontalX[1]);
+        //System.out.println(horizontalXRes.getWeights().dump());
+        OLSResult horizontalYRes =
+                fitLinearRegression(designAndTargetHorizontalY[0], designAndTargetHorizontalY[1]);
+        //System.out.println(horizontalYRes.getWeights().dump());
+        OLSResult verticalXRes =
+                fitLinearRegression(designAndTargetVerticalX[0], designAndTargetVerticalX[1]);
+        //System.out.println(verticalXRes.getWeights().dump());
+        OLSResult verticalYRes =
+                fitLinearRegression(designAndTargetVerticalY[0], designAndTargetVerticalY[1]);
+        //System.out.println(verticalYRes.getWeights().dump());
+        // Build the covariance matrices of the horizontal and vertical Gaussians.
+        // Horizontal Gaussian
+        horizontalGaussianCov = new Mat(2,2,CvType.CV_64F);
+        horizontalGaussianCov.put(0,0,horizontalXRes.getVariance());
+        horizontalGaussianCov.put(0,1,0.0);
+        horizontalGaussianCov.put(1,0,0.0);
+        horizontalGaussianCov.put(1,1,horizontalYRes.getVariance());
+        Core.invert(horizontalGaussianCov, inverseHorizontalGaussianCov);
+        // Vertical Gaussian
+        verticalGaussianCov = new Mat(2,2,CvType.CV_64F);
+        verticalGaussianCov.put(0,0,verticalXRes.getVariance());
+        verticalGaussianCov.put(0,1,0.0);
+        verticalGaussianCov.put(1,0,0.0);
+        verticalGaussianCov.put(1,1,verticalYRes.getVariance());
+        Core.invert(verticalGaussianCov, inverseVerticalGaussianCov);
+        // Write everything into the DB.
         System.out.println("XXX");
     }
 
@@ -145,26 +198,22 @@ public class ProbabilisticPostProcesser {
         return new Mat[]{designMatrix, targetMatrix};
     }
 
-    private double fitLinearRegression(Mat sample, Mat target, Mat weights)
+    private OLSResult fitLinearRegression(Mat designMatrix, Mat target)
     {
         // Weights with Ordinary Least Squares (MLE)
-        Mat designMatrix = new Mat(sample.rows(), sample.cols()+1, sample.type());
-        for(int i=0;i<sample.rows();i++)
-        {
-            for(int j=0;j<sample.cols();j++)
-                designMatrix.put(i,j,sample.get(i,j)[0]);
-            designMatrix.put(i,sample.cols(),1.0);
-        }
         Mat designMatrixT = new Mat();
         Core.transpose(designMatrix, designMatrixT);
         Mat iM = new Mat();
-        Core.multiply(designMatrixT, designMatrix, iM);
+        // Core.multiply(designMatrixT, designMatrix, iM);
+        Core.gemm(designMatrixT, designMatrix, 1.0, new Mat(), 0.0, iM);
         Mat inverse_iM = new Mat();
         Core.invert(iM, inverse_iM);
         Mat iM2 = new Mat();
-        Core.multiply(inverse_iM, designMatrixT, iM2);
-        weights = new Mat();
-        Core.multiply(iM2, target, weights);
+        //Core.multiply(inverse_iM, designMatrixT, iM2);
+        Core.gemm(inverse_iM, designMatrixT, 1.0, new Mat(), 0.0, iM2);
+        Mat weights = new Mat();
+        //Core.multiply(iM2, target, weights);
+        Core.gemm(iM2, target, 1.0, new Mat(), 0.0, weights);
         Mat weightsT = new Mat();
         Core.transpose(weights, weightsT);
         // Variance (MLE)
@@ -176,8 +225,9 @@ public class ProbabilisticPostProcesser {
             double t = target.get(i,0)[0];
             sum += Math.pow(t - d, 2.0);
         }
-        double variance = (double)designMatrix.rows() / sum;
-        return variance;
+        double variance = sum / (double)designMatrix.rows();
+        System.out.println(weights.dump());
+        return new OLSResult(weights, variance, sum);
     }
 
     private double getTopLeftDensity(double x, double y)
@@ -185,7 +235,7 @@ public class ProbabilisticPostProcesser {
         double [] coord = {x,y};
         double density = 0.0;
         for(int i=0;i<this.topLeftMixtureCount;i++)
-            density += gaussianPriors[i]*gaussians[i].density(coord);
+            density += gaussianPriors[i]* topLeftGaussianComponents[i].density(coord);
         return density;
     }
 }

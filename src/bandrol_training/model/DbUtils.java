@@ -1,6 +1,8 @@
 package bandrol_training.model;
 
 import bandrol_training.Constants;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
@@ -10,6 +12,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 public class DbUtils {
 
@@ -111,5 +114,71 @@ public class DbUtils {
             e.printStackTrace();
         }
         return resultList;
+    }
+
+    public static void writeToKVMatrixTable(String matrixName, Mat matrix)
+    {
+        Connection conn = connect();
+        String sql = "INSERT INTO "+Constants.MATRIX_KV_TABLE+
+                "(MatrixName,Row,Column,Value) VALUES(?,?,?,?);";
+        try
+        {
+            assert conn != null;
+            conn.setAutoCommit(false);
+            PreparedStatement prep = conn.prepareStatement(sql);
+            for(int i=0;i<matrix.rows();i++)
+            {
+                for(int j=0;j<matrix.cols();j++)
+                {
+                    prep.setString(1, matrixName);
+                    prep.setInt(2, i);
+                    prep.setInt(3, j);
+                    prep.setDouble(4,matrix.get(i,j)[0]);
+                }
+            }
+            int[] updateCounts = prep.executeBatch();
+            int totalNumOfUpdates = Arrays.stream(updateCounts).sum();
+            if(totalNumOfUpdates != matrix.rows()*matrix.cols())
+                throw new SQLException("Number of updates do match!");
+            conn.commit();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static Mat readFromKVMatrixTable(String matrixName)
+    {
+        Table<Integer, Integer, Double> intermediateTable = HashBasedTable.create();
+        Connection conn = connect();
+        String sql = "SELECT * FROM "+Constants.MATRIX_KV_TABLE+" WHERE MatrixName = "+matrixName;
+        int maxRow = -1;
+        int maxCol = -1;
+        Mat matrix = null;
+        try {
+            assert conn != null;
+            Statement stmt  = conn.createStatement();
+            ResultSet rs    = stmt.executeQuery(sql);
+            while (rs.next())
+            {
+                int row = rs.getInt("Row");
+                int col = rs.getInt("Column");
+                double value = rs.getDouble("Value");
+                intermediateTable.put(row,col,value);
+                if(row > maxRow)
+                    maxRow = row;
+                if(col > maxCol)
+                    maxCol = col;
+            }
+            if(maxRow < 0 || maxCol < 0)
+                throw new SQLException("Degenerate matrix!");
+            matrix = Mat.zeros(maxRow+1,maxCol+1,CvType.CV_64F);
+            for(Table.Cell<Integer,Integer,Double> cell : intermediateTable.cellSet())
+                matrix.put(cell.getRowKey(), cell.getColumnKey(), cell.getValue());
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        assert matrix != null;
+        return matrix;
     }
 }

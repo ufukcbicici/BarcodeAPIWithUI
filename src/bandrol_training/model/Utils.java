@@ -73,6 +73,20 @@ public class Utils {
         return trainingImageNames;
     }
 
+    public static double mahalanobisDistance(Mat p,Mat mean,Mat inverseCov)
+    {
+        Mat d = new Mat();
+        Core.subtract(p, mean,d);
+        Mat dT = new Mat();
+        Core.transpose(d, dT);
+        Mat temp = new Mat();
+        Core.gemm(dT, inverseCov, 1.0, new Mat(), 0.0, temp);
+        Mat mahalanobis = new Mat();
+        Core.gemm(temp, d, 1.0, new Mat(), 0.0, mahalanobis);
+        double distance = Math.sqrt(mahalanobis.get(0,0)[0]);
+        return distance;
+    }
+
     public static List<String> getAllTrainingImageNames()
     {
         File folder = new File(Constants.TRAINING_IMAGES);
