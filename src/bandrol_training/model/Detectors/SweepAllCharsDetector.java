@@ -1,6 +1,7 @@
 package bandrol_training.model.Detectors;
 
 import bandrol_training.Constants;
+import bandrol_training.model.Algorithms.NonMaximaSuppression;
 import bandrol_training.model.ClassifierType;
 import bandrol_training.model.Detection;
 import bandrol_training.model.Ensembles.EnsembleModel;
@@ -49,53 +50,64 @@ public class SweepAllCharsDetector extends DetectionMethod {
         }
     }
 
-    private List<Detection> getLabelDetections(
-            String label,
+    private List<Detection> detectAllChars(
             Table<Integer, Integer, Mat> featureTable,
-            int sliding_window_width,
-            int sliding_window_height,
-            double nms_iou_threshold) {
-        EnsembleModel ensemble = ensembleMap.get(label);
-        List<Detection> detectionList = new ArrayList<>();
-        for (Table.Cell c : featureTable.cellSet()) {
-            Mat feature = (Mat) c.getValue();
-            Mat predictedLabels = ensemble.predictLabels(feature);
-            Mat predictedMargins = ensemble.predictConfidences(feature);
-            double totalMarginResponse = 0.0;
-            double totalVote = 0.0;
-            assert predictedLabels.cols() == predictedMargins.cols();
-            for (int j = 0; j < predictedLabels.cols(); j++) {
-                double predictedLabel = predictedLabels.get(0, j)[0];
-                totalVote += predictedLabel;
-                totalMarginResponse += Math.abs(predictedMargins.get(0, j)[0]) * predictedLabel;
-            }
-            double avgMarginResponse = totalMarginResponse / (double) ensemble.getModelCount();
-            if (totalVote > 0) {
-                Detection detection = new Detection(
-                        new Rect((int) c.getColumnKey(), (int) c.getRowKey(),
-                                sliding_window_width, sliding_window_height), avgMarginResponse, label);
-                detectionList.add(detection);
+            int sliding_window_width, int sliding_window_height,
+            double nms_iou_threshold)
+    {
+        SweepDetector [] detectors = new SweepDetector[Constants.THREAD_COUNT];
+        List<Detection> allDetections = new ArrayList<>();
+        for(int tid=0;tid<Constants.THREAD_COUNT;tid++)
+        {
+            detectors[tid] = new SweepDetector(ensembleMap, featureTable, sliding_window_width,
+                    sliding_window_height, nms_iou_threshold);
+        }
+        int currIndex = 0;
+        for(String label : Constants.CURR_LABELS)
+        {
+            if (!ensembleMap.containsKey(label))
+                continue;
+            detectors[currIndex % Constants.THREAD_COUNT].addCharacter(label);
+            currIndex++;
+        }
+        for(int tid=0;tid<Constants.THREAD_COUNT;tid++)
+        {
+            detectors[tid].start();
+        }
+        for(int tid=0;tid<Constants.THREAD_COUNT;tid++)
+        {
+            try {
+                detectors[tid].join();
+                allDetections.addAll(detectors[tid].getDetections());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
-        List<Detection> maxima = nonMaximaSuppression(detectionList, nms_iou_threshold);
-        return maxima;
+        return allDetections;
     }
 
     public void detect(Mat img, int sliding_window_width, int sliding_window_height,
                                 double sourceImgWidth, double nms_iou_threshold)
     {
+        long t0 = System.nanoTime();
         Mat canvasImg = img.clone();
         Table<Integer, Integer, Mat> featureTable =
                 extractFeatures(img, sliding_window_width, sliding_window_height, sourceImgWidth);
         List<Detection> listOfMaximaForAllLabels = new ArrayList<>();
-        for(String label : Constants.CURR_LABELS) {
-            System.out.println("Processing Label:"+label);
-            if (!ensembleMap.containsKey(label))
-                continue;
-            listOfMaximaForAllLabels.addAll(getLabelDetections(label, featureTable,
-                    sliding_window_width, sliding_window_height, nms_iou_threshold));
-        }
-        List<Detection> ultimateMaxima = nonMaximaSuppression(listOfMaximaForAllLabels, nms_iou_threshold);
+        long t1 = System.nanoTime();
+        System.out.println("Feature Extraction took:"+(double)(t1-t0)/1000000.0+" ms");
+
+        long t2 = System.nanoTime();
+        listOfMaximaForAllLabels = detectAllChars(featureTable, sliding_window_width, sliding_window_height,
+                nms_iou_threshold);
+        long t3 = System.nanoTime();
+        System.out.println("Detection Took:"+(double)(t3-t2)/1000000.0+" ms");
+
+        long t4 = System.nanoTime();
+        List<Detection> ultimateMaxima = NonMaximaSuppression.run(listOfMaximaForAllLabels, nms_iou_threshold);
+        long t5 = System.nanoTime();
+        System.out.println("Final NMS Took:"+(double)(t5-t4)/1000000.0+" ms");
+
         for (Detection dtc : ultimateMaxima) {
             Rect r = dtc.getRect();
             Imgproc.rectangle(canvasImg, new Point(r.x, r.y),

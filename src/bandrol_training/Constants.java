@@ -33,6 +33,7 @@ public class Constants {
     public static final String HOG_TABLE = "HOG_FEATURES";
     public static final String MATRIX_KV_TABLE = "MATRIX_KV_TABLE";
     public static final double QR_RATIO = 0.1;
+    public static int THREAD_COUNT = 1;
 
 
     public static final List<String> LABELS;
