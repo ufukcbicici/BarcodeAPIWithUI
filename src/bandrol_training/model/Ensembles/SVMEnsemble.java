@@ -1,6 +1,8 @@
 package bandrol_training.model.Ensembles;
 
 import bandrol_training.Constants;
+import bandrol_training.model.DbUtils;
+import bandrol_training.model.Detectors.SVMInfo;
 import bandrol_training.model.GroundTruth;
 import bandrol_training.model.Utils;
 import org.apache.commons.math3.random.EmpiricalDistribution;
@@ -17,12 +19,14 @@ public class SVMEnsemble extends EnsembleModel
     private boolean isMultiClass;
     // private static final double BIN_WIDTH = 0.05;
     private Map<SVM, EmpiricalDistribution> distributionMap;
+    private Map<SVM, Double> positiveSignMap;
 
     public SVMEnsemble(boolean isMultiClass)
     {
         this.models = new ArrayList<>();
         this.isMultiClass = isMultiClass;
         distributionMap = new HashMap<>();
+        positiveSignMap = new HashMap<>();
     }
 
     public SVMEnsemble(List<SVM> svmList, boolean isMultiClass)
@@ -123,26 +127,44 @@ public class SVMEnsemble extends EnsembleModel
     // Load all SVMs it can find.
     public void loadEnsemble(String label)
     {
-        int currSVMIndex = 0;
-        while (true)
+//        int currSVMIndex = 0;
+//        while (true)
+//        {
+//            String svmPath = Constants.OBJECT_DETECTOR_FOLDER_PATH + "object_detector_for_" + label +"_svm_"+currSVMIndex;
+//            boolean doesExist = Utils.checkFileExist(svmPath);
+//            if(!doesExist)
+//            {
+//                break;
+//            }
+//            SVM svm = SVM.load(svmPath);
+//            this.models.add(svm);
+//            currSVMIndex++;
+//        }
+        List<SVMInfo> svmInfoList = DbUtils.readObjectDetectionSvms(label);
+        for(SVMInfo svmInfo : svmInfoList)
         {
-            String svmPath = Constants.OBJECT_DETECTOR_FOLDER_PATH + "object_detector_for_" + label +"_svm_"+currSVMIndex;
-            boolean doesExist = Utils.checkFileExist(svmPath);
-            if(!doesExist)
-            {
-                break;
-            }
+            String svmPath = Constants.OBJECT_DETECTOR_FOLDER_PATH + svmInfo.getFileName();
+            double positiveLabelSign = svmInfo.getPositiveSign();
             SVM svm = SVM.load(svmPath);
             this.models.add(svm);
-            currSVMIndex++;
+            this.positiveSignMap.put(svm, positiveLabelSign);
         }
     }
 
     public void saveEnsemble(String token)
     {
+        int base = 0;
         for(int i=0;i<this.models.size();i++)
         {
-            this.models.get(i).save(Constants.OBJECT_DETECTOR_FOLDER_PATH + "object_detector_for_" + token +"_svm_"+i);
+            int id = base + i;
+            String svmPath = Constants.OBJECT_DETECTOR_FOLDER_PATH + "object_detector_for_" + token +"_svm_"+id;
+            while(Utils.checkFileExist(svmPath))
+            {
+                base++;
+                id = base + i;
+                svmPath = Constants.OBJECT_DETECTOR_FOLDER_PATH + "object_detector_for_" + token +"_svm_"+id;
+            }
+            this.models.get(i).save(svmPath);
         }
     }
 

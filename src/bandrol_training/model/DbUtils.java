@@ -1,6 +1,7 @@
 package bandrol_training.model;
 
 import bandrol_training.Constants;
+import bandrol_training.model.Detectors.SVMInfo;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import org.opencv.core.CvType;
@@ -147,32 +148,6 @@ public class DbUtils {
         }
     }
 
-    public static void writeToObjectDetectionSvmTable(String svmFileName, double positiveSign,
-                                                      String label, int isActive)
-    {
-        Connection conn = connect();
-        String sql = "INSERT INTO "+Constants.OBJECT_DETECTOR_SVM_TABLE+
-                "(SVMFileName,PositiveLabelSign,DetectionLabel,IsActive) VALUES(?,?,?,?);";
-        try
-        {
-            assert conn != null;
-            conn.setAutoCommit(false);
-            PreparedStatement prep = conn.prepareStatement(sql);
-            prep.setString(1, svmFileName);
-            prep.setDouble(2, positiveSign);
-            prep.setString(3, label);
-            prep.setInt(4,isActive);
-            prep.addBatch();
-            int[] updateCounts = prep.executeBatch();
-            int totalNumOfUpdates = Arrays.stream(updateCounts).sum();
-            if(totalNumOfUpdates != 1)
-                throw new SQLException("Number of updates do match!");
-            conn.commit();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
     public static Mat readFromKVMatrixTable(String matrixName)
     {
         Table<Integer, Integer, Double> intermediateTable = HashBasedTable.create();
@@ -208,4 +183,57 @@ public class DbUtils {
         assert matrix != null;
         return matrix;
     }
+
+    public static void writeToObjectDetectionSvmTable(String svmFileName, double positiveSign,
+                                                      String label, int isActive)
+    {
+        Connection conn = connect();
+        String sql = "INSERT INTO "+Constants.OBJECT_DETECTOR_SVM_TABLE+
+                "(SVMFileName,PositiveLabelSign,DetectionLabel,IsActive) VALUES(?,?,?,?);";
+        try
+        {
+            assert conn != null;
+            conn.setAutoCommit(false);
+            PreparedStatement prep = conn.prepareStatement(sql);
+            prep.setString(1, svmFileName);
+            prep.setDouble(2, positiveSign);
+            prep.setString(3, label);
+            prep.setInt(4,isActive);
+            prep.addBatch();
+            int[] updateCounts = prep.executeBatch();
+            int totalNumOfUpdates = Arrays.stream(updateCounts).sum();
+            if(totalNumOfUpdates != 1)
+                throw new SQLException("Number of updates do match!");
+            conn.commit();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static List<SVMInfo> readObjectDetectionSvms(String label)
+    {
+        List<SVMInfo> svmInfoList = new ArrayList<>();
+        Connection conn = connect();
+        String sql = "SELECT * FROM "+Constants.OBJECT_DETECTOR_SVM_TABLE+
+                " WHERE DetectionLabel = "+label+" AND IsActive = 1";
+        try
+        {
+            assert conn != null;
+            Statement stmt  = conn.createStatement();
+            ResultSet rs    = stmt.executeQuery(sql);
+            while (rs.next())
+            {
+                String fileName = rs.getString("SVMFileName");
+                double positiveSign = rs.getDouble("PositiveLabelSign");
+                String detectionLabel = rs.getString("DetectionLabel");
+                svmInfoList.add(new SVMInfo(fileName, positiveSign, detectionLabel));
+            }
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return svmInfoList;
+    }
+
+
 }
