@@ -134,11 +134,38 @@ public class DbUtils {
                     prep.setInt(2, i);
                     prep.setInt(3, j);
                     prep.setDouble(4,matrix.get(i,j)[0]);
+                    prep.addBatch();
                 }
             }
             int[] updateCounts = prep.executeBatch();
             int totalNumOfUpdates = Arrays.stream(updateCounts).sum();
             if(totalNumOfUpdates != matrix.rows()*matrix.cols())
+                throw new SQLException("Number of updates do match!");
+            conn.commit();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void writeToObjectDetectionSvmTable(String svmFileName, double positiveSign,
+                                                      String label, int isActive)
+    {
+        Connection conn = connect();
+        String sql = "INSERT INTO "+Constants.OBJECT_DETECTOR_SVM_TABLE+
+                "(SVMFileName,PositiveLabelSign,DetectionLabel,IsActive) VALUES(?,?,?,?);";
+        try
+        {
+            assert conn != null;
+            conn.setAutoCommit(false);
+            PreparedStatement prep = conn.prepareStatement(sql);
+            prep.setString(1, svmFileName);
+            prep.setDouble(2, positiveSign);
+            prep.setString(3, label);
+            prep.setInt(4,isActive);
+            prep.addBatch();
+            int[] updateCounts = prep.executeBatch();
+            int totalNumOfUpdates = Arrays.stream(updateCounts).sum();
+            if(totalNumOfUpdates != 1)
                 throw new SQLException("Number of updates do match!");
             conn.commit();
         } catch (SQLException e) {

@@ -32,6 +32,7 @@ public class Constants {
     public static final String GROUND_TRUTH_TABLE = "BANDROL_GROUND_TRUTHS";
     public static final String HOG_TABLE = "HOG_FEATURES";
     public static final String MATRIX_KV_TABLE = "MATRIX_KV_TABLE";
+    public static final String OBJECT_DETECTOR_SVM_TABLE = "OBJECT_DETECTOR_SVMS";
     public static final double QR_RATIO = 0.1;
     public static int THREAD_COUNT = 4;
 

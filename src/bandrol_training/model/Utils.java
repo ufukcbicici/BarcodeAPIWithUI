@@ -4,6 +4,7 @@ import bandrol_training.Constants;
 import org.opencv.core.*;
 import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.ml.SVM;
 import org.opencv.ml.StatModel;
 import org.opencv.utils.Converters;
 
@@ -12,9 +13,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -54,25 +53,6 @@ public class Utils {
         return classFeaturesCombined;
     }
 
-    public static List<String> getAllTestImageNames()
-    {
-        File folder = new File(Constants.TEST_IMAGES);
-        File[] listOfFiles = folder.listFiles();
-        List<String> trainingImageNames = new ArrayList<>();
-        for (int i = 0; i < listOfFiles.length; i++)
-        {
-            if (listOfFiles[i].isFile())
-            {
-                System.out.println("File " + listOfFiles[i].getName());
-                trainingImageNames.add(listOfFiles[i].getName());
-            } else if (listOfFiles[i].isDirectory())
-            {
-                System.out.println("Directory " + listOfFiles[i].getName());
-            }
-        }
-        return trainingImageNames;
-    }
-
     public static double mahalanobisDistance(Mat p,Mat mean,Mat inverseCov)
     {
         Mat d = new Mat();
@@ -87,23 +67,101 @@ public class Utils {
         return distance;
     }
 
+    public static void writeCurrentSVMsIntoDB()
+    {
+        List<File> listOfFiles = getAllFilesUnderFolder(Constants.OBJECT_DETECTOR_FOLDER_PATH);
+        //Detect the sign of positive labels
+        String exclusionStatement = "FileName NOT IN" + Utils.getFileSelectionClause();
+        for(String label : Constants.CURR_LABELS)
+        {
+            System.out.println("*********Label:"+label+"*********");
+            String positiveFilterClause = Utils.getFilterClause(
+                    "Label = "+"\""+label+"\"",  exclusionStatement);
+//            String negativeFilterClause = Utils.getFilterClause(
+//                    "Label != "+label, exclusionStatement);
+            List<GroundTruth> allPositiveSamples = DbUtils.readGroundTruths(positiveFilterClause);
+            List<Mat> allPositiveFeatures = allPositiveSamples.stream().
+                    map(GroundTruth::getHogFeature).collect(Collectors.toList());
+            Mat featureMatrixT = new Mat();
+            Core.hconcat(allPositiveFeatures, featureMatrixT);
+            Mat featureMatrix = new Mat();
+            Core.transpose(featureMatrixT, featureMatrix);
+            Mat featureMatrix32f = new Mat();
+            featureMatrix.convertTo(featureMatrix32f, CvType.CV_32F);
+            List<File> svmsForCurrentLabel = listOfFiles.stream().
+                    filter(f -> f.getName().contains("_"+label+"_")).collect(Collectors.toList());
+            for(File file : svmsForCurrentLabel)
+            {
+                System.out.println("*********SVM:"+file.getName()+"*********");
+                Mat margins = new Mat();
+                String svmFullPath = file.getAbsolutePath();
+                SVM svm = SVM.load(svmFullPath);
+                svm.predict(featureMatrix32f, margins, StatModel.RAW_OUTPUT);
+                double positiveCount = 0;
+                double negativeCount = 0;
+                for(int i=0;i<margins.rows();i++)
+                {
+                    if(margins.get(i,0)[0] > 0)
+                        positiveCount++;
+                    else
+                        negativeCount++;
+                }
+                System.out.println("Positive Count:"+positiveCount);
+                System.out.println("Negative Count:"+negativeCount);
+                System.out.println("Positive Ratio:"+positiveCount / (positiveCount + negativeCount));
+                System.out.println("Negative Ratio:"+negativeCount / (positiveCount + negativeCount));
+                double sign = (negativeCount > positiveCount)?-1.0:1.0;
+                System.out.println("*********SVM:"+file.getName()+"*********");
+                DbUtils.writeToObjectDetectionSvmTable(file.getName(), sign, label, 1);
+            }
+            System.out.println("*********Label:"+label+"*********");
+        }
+
+
+//        for()
+//
+//
+//
+//
+//        String positiveFilterClause = Utils.getFilterClause(
+//                "Label = "+charToTrain,
+//                "ABS(VerticalDisplacement) < 2",
+//                "ABS(HorizontalDisplacement) < 2",
+//                "ABS(Rotation) < 3",
+//                exclusionStatement);
+//        String negativeFilterClause = Utils.getFilterClause(
+//                "Label != "+charToTrain,
+//                "YCoord > " + upperRatio,
+//                "IoUWithClosestGT < " +negativeMaxIoU,
+//                exclusionStatement);
+//        List<GroundTruth> allPositiveSamples = DbUtils.readGroundTruths(positiveFilterClause);
+//        List<GroundTruth> allNegativeSamples = DbUtils.readGroundTruths(negativeFilterClause);
+
+
+
+
+    }
+
+    public static List<File> getAllFilesUnderFolder(String folderPath)
+    {
+        File folder = new File(folderPath);
+        List<File> listOfFiles = Arrays.stream(Objects.requireNonNull(folder.listFiles())).
+                filter(File::isFile).collect(Collectors.toList());
+        return listOfFiles;
+    }
+
     public static List<String> getAllTrainingImageNames()
     {
-        File folder = new File(Constants.TRAINING_IMAGES);
-        File[] listOfFiles = folder.listFiles();
-        List<String> trainingImageNames = new ArrayList<>();
-        for (int i = 0; i < listOfFiles.length; i++)
-        {
-            if (listOfFiles[i].isFile())
-            {
-                System.out.println("File " + listOfFiles[i].getName());
-                trainingImageNames.add(listOfFiles[i].getName());
-            } else if (listOfFiles[i].isDirectory())
-            {
-                System.out.println("Directory " + listOfFiles[i].getName());
-            }
-        }
+        List<File> listOfFiles = getAllFilesUnderFolder(Constants.TRAINING_IMAGES);
+        List<String> trainingImageNames = listOfFiles.stream().map(File::getName).collect(Collectors.toList());
         return trainingImageNames;
+    }
+
+    public static List<String> getAllTestImageNames()
+    {
+        List<File> listOfFiles = getAllFilesUnderFolder(Constants.TEST_IMAGES);
+        List<String> testImageNames = listOfFiles.stream().map(File::getName).collect(Collectors.toList());
+        return testImageNames;
     }
 
     public static String getFilterClause(String... conditions)

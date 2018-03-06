@@ -153,6 +153,7 @@ public class Controller {
             e.printStackTrace();
         }
         // detector1 = null;
+        // Utils.writeCurrentSVMsIntoDB();
     }
 
     public void initUIElements()
