@@ -46,23 +46,19 @@ public class SweepDetector extends Thread {
     private List<Detection> getLabelDetections(String label) {
         List<Detection> detectionList = new ArrayList<>();
         EnsembleModel ensemble = ensembleMap.get(label);
-        Mat predictedLabelsUnified = ensemble.predictLabels(featureMatrix);
         Mat predictedMarginsUnified = ensemble.predictConfidences(featureMatrix);
         for(Table.Cell c : rowIndexTable.cellSet())
         {
             int featureMatrixRowIndex = (int)c.getValue();
             double totalMarginResponse = 0.0;
-            double totalVote = 0.0;
-            Mat predictedLabels = predictedLabelsUnified.row(featureMatrixRowIndex);
+            // double totalVote = 0.0;
             Mat predictedMargins = predictedMarginsUnified.row(featureMatrixRowIndex);
-            assert predictedLabels.cols() == predictedMargins.cols();
-            for (int j = 0; j < predictedLabels.cols(); j++) {
-                double predictedLabel = predictedLabels.get(0, j)[0];
-                totalVote += predictedLabel;
-                totalMarginResponse += Math.abs(predictedMargins.get(0, j)[0]) * predictedLabel;
-            }
+            for(int j=0;j<predictedMargins.cols();j++)
+                totalMarginResponse += predictedMargins.get(0,j)[0];
+            assert predictedMargins.cols() == ensemble.getModelCount();
             double avgMarginResponse = totalMarginResponse / (double) ensemble.getModelCount();
-            if (totalVote > 0) {
+            if(avgMarginResponse > 0)
+            {
                 Detection detection = new Detection(
                         new Rect((int) c.getColumnKey(), (int) c.getRowKey(),
                                 sliding_window_width, sliding_window_height), avgMarginResponse, label);
@@ -71,6 +67,32 @@ public class SweepDetector extends Thread {
         }
         List<Detection> maxima = NonMaximaSuppression.run(detectionList, nms_iou_threshold);
         return maxima;
+
+//        Mat predictedLabelsUnified = ensemble.predictLabels(featureMatrix);
+//        Mat predictedMarginsUnified = ensemble.predictConfidences(featureMatrix);
+//        for(Table.Cell c : rowIndexTable.cellSet())
+//        {
+//            int featureMatrixRowIndex = (int)c.getValue();
+//            double totalMarginResponse = 0.0;
+//            double totalVote = 0.0;
+//            Mat predictedLabels = predictedLabelsUnified.row(featureMatrixRowIndex);
+//            Mat predictedMargins = predictedMarginsUnified.row(featureMatrixRowIndex);
+//            assert predictedLabels.cols() == predictedMargins.cols();
+//            for (int j = 0; j < predictedLabels.cols(); j++) {
+//                double predictedLabel = predictedLabels.get(0, j)[0];
+//                totalVote += predictedLabel;
+//                totalMarginResponse += Math.abs(predictedMargins.get(0, j)[0]) * predictedLabel;
+//            }
+//            double avgMarginResponse = totalMarginResponse / (double) ensemble.getModelCount();
+//            if (totalVote > 0) {
+//                Detection detection = new Detection(
+//                        new Rect((int) c.getColumnKey(), (int) c.getRowKey(),
+//                                sliding_window_width, sliding_window_height), avgMarginResponse, label);
+//                detectionList.add(detection);
+//            }
+//        }
+//        List<Detection> maxima = NonMaximaSuppression.run(detectionList, nms_iou_threshold);
+//        return maxima;
     }
 
     public void addCharacter(String label)

@@ -35,6 +35,7 @@ public class Constants {
     public static final String OBJECT_DETECTOR_SVM_TABLE = "OBJECT_DETECTOR_SVMS";
     public static final double QR_RATIO = 0.1;
     public static int THREAD_COUNT = 4;
+    public static double POSITIVE_IOU_THRESHOLD = 0.5;
 
 
     public static final List<String> LABELS;

@@ -86,8 +86,8 @@ public class SweepAllCharsDetector extends DetectionMethod {
         return allDetections;
     }
 
-    public void detect(Mat img, int sliding_window_width, int sliding_window_height,
-                                double sourceImgWidth, double nms_iou_threshold)
+    public List<Detection>  detect(Mat img, int sliding_window_width, int sliding_window_height,
+                                double sourceImgWidth, double nms_iou_threshold, boolean isVerbose)
     {
         long t0 = System.nanoTime();
         Mat canvasImg = img.clone();
@@ -117,8 +117,13 @@ public class SweepAllCharsDetector extends DetectionMethod {
             Imgproc.putText(canvasImg, dtc.getLabel(), new Point(r.x + 5, r.y + 10), font,
                     1.0,new Scalar(0,255,0),1);
         }
-        String fileName = Utils.getNonExistingFileName(DETECTIONPATH + "final_detection", ".png");
-        Imgcodecs.imwrite(fileName, canvasImg);
-        Utils.showImageInPopup(Utils.matToBufferedImage(canvasImg, null));
+        if(isVerbose)
+        {
+            String fileName = Utils.getNonExistingFileName(DETECTIONPATH +
+                    "final_detection", ".png");
+            Imgcodecs.imwrite(fileName, canvasImg);
+            Utils.showImageInPopup(Utils.matToBufferedImage(canvasImg, null));
+        }
+        return ultimateMaxima;
     }
 }

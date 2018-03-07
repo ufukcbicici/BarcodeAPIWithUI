@@ -4,6 +4,7 @@ import bandrol_training.Constants;
 import bandrol_training.model.*;
 import bandrol_training.model.Algorithm;
 // import bandrol_training.model.Detectors.Detector1;
+import bandrol_training.model.Detectors.PerformanceMeasurer;
 import bandrol_training.model.Detectors.SweepAllCharsDetector;
 import bandrol_training.post_processing.ProbabilisticPostProcesser;
 import javafx.embed.swing.SwingFXUtils;
@@ -177,12 +178,14 @@ public class Controller {
     public void run_method_0(ActionEvent actionEvent)
     {
         List<String> testImages = Utils.getAllTestImageNames();
+        // List<String> testImages = Utils.getAllTrainingImageNames();
         double sliding_window_width = Double.parseDouble(sliding_window_width_tf.getText());
         double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
         double nms_iou_threshold = Double.parseDouble(nms_iou_threshold_txt_fld.getText());
         for(String fileName : testImages)
         {
             String path = Constants.TEST_IMAGES + fileName;
+            // String path = Constants.TRAINING_IMAGES + fileName;
             System.out.println("Processing File:"+path);
             Mat image = Imgcodecs.imread(path, Imgcodecs.CV_LOAD_IMAGE_COLOR);
             Mat resizedSource = new Mat();
@@ -194,7 +197,7 @@ public class Controller {
                     (int)sliding_window_width,
                     (int)sliding_window_height,
                     Double.parseDouble(reference_width_tf.getText()),
-                    nms_iou_threshold);
+                    nms_iou_threshold, true);
 //            ObjectDetector.detectWithEnsembles(
 //                    objectDetectorEnsembleCount,
 //                    charToProcess,
@@ -210,6 +213,14 @@ public class Controller {
     @FXML
     public void run_method_1(ActionEvent actionEvent)
     {
+        double referenceWidth = Double.parseDouble(reference_width_tf.getText());
+        double sliding_window_width = Double.parseDouble(sliding_window_width_tf.getText());
+        double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
+        double nms_iou_threshold = Double.parseDouble(nms_iou_threshold_txt_fld.getText());
+        PerformanceMeasurer.measure(detector,
+                (int)sliding_window_width,
+                (int)sliding_window_height,
+                referenceWidth, nms_iou_threshold, Constants.TEST_IMAGES);
 //        if(detector1 == null)
 //        {
 //            detector1  = new Detector1(ClassifierType.SVM);

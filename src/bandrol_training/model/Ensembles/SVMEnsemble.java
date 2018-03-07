@@ -217,13 +217,28 @@ public class SVMEnsemble extends EnsembleModel
 
     public Mat predictConfidences(Mat samples)
     {
+//        List<Mat> margins = new ArrayList<>();
+//        for(StatModel statModel : models)
+//        {
+//            SVM svm = (SVM)statModel;
+//            Mat response = new Mat();
+//            svm.predict(samples, response, StatModel.RAW_OUTPUT);
+//            margins.add(response);
+//        }
+//        Mat combinedMarginMatrix = new Mat();
+//        Core.hconcat(margins, combinedMarginMatrix);
+//        return combinedMarginMatrix;
+
         List<Mat> margins = new ArrayList<>();
         for(StatModel statModel : models)
         {
             SVM svm = (SVM)statModel;
             Mat response = new Mat();
             svm.predict(samples, response, StatModel.RAW_OUTPUT);
-            margins.add(response);
+            Mat signCorrectedResponses = new Mat();
+            double positiveLabelSign = positiveSignMap.get(svm);
+            Core.multiply(response, new Scalar(positiveLabelSign), signCorrectedResponses);
+            margins.add(signCorrectedResponses);
         }
         Mat combinedMarginMatrix = new Mat();
         Core.hconcat(margins, combinedMarginMatrix);

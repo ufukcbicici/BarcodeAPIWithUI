@@ -42,7 +42,9 @@ public abstract class DetectionMethod {
         return hogTable;
     }
 
-    public abstract void detect(Mat img, int sliding_window_width, int sliding_window_height,
-                                double sourceImgWidth, double nms_iou_threshold);
+    public abstract List<Detection>
+    detect(Mat img, int sliding_window_width, int sliding_window_height,
+                                double sourceImgWidth, double nms_iou_threshold, boolean isVerbose);
+
 
 }

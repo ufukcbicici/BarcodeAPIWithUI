@@ -215,7 +215,7 @@ public class DbUtils {
         List<SVMInfo> svmInfoList = new ArrayList<>();
         Connection conn = connect();
         String sql = "SELECT * FROM "+Constants.OBJECT_DETECTOR_SVM_TABLE+
-                " WHERE DetectionLabel = "+label+" AND IsActive = 1";
+                " WHERE DetectionLabel = "+"\""+label+"\""+ "AND IsActive = 1";
         try
         {
             assert conn != null;
