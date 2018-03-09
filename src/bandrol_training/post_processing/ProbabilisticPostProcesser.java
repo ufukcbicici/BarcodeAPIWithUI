@@ -1,16 +1,21 @@
 package bandrol_training.post_processing;
 
+import bandrol_training.Constants;
 import bandrol_training.model.DbUtils;
+import bandrol_training.model.Detection;
 import bandrol_training.model.GroundTruth;
 import bandrol_training.model.Utils;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.math3.distribution.MultivariateNormalDistribution;
+import org.apache.commons.math3.util.Pair;
 import org.opencv.core.*;
 import org.opencv.ml.EM;
 import org.opencv.ml.Ml;
 import org.opencv.ml.TrainData;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static bandrol_training.Constants.TOTAL_CHAR_COUNT;
 
@@ -50,6 +55,13 @@ public class ProbabilisticPostProcesser {
     private Mat inverseHorizontalGaussianCov;
     private Mat verticalGaussianCov;
     private Mat inverseVerticalGaussianCov;
+    private OLSResult horizontalXRes;
+    //System.out.println(horizontalXRes.getWeights().dump());
+    private OLSResult horizontalYRes;
+    //System.out.println(horizontalYRes.getWeights().dump());
+    private OLSResult verticalXRes;
+    //System.out.println(verticalXRes.getWeights().dump());
+    private OLSResult verticalYRes;
 
     public void train(int topLeftMixtureCount)
     {
@@ -163,6 +175,7 @@ public class ProbabilisticPostProcesser {
         //System.out.println(verticalYRes.getWeights().dump());
         // Build the covariance matrices of the horizontal and vertical Gaussians.
         // Horizontal Gaussian
+        inverseHorizontalGaussianCov = new Mat();
         horizontalGaussianCov = new Mat(2,2,CvType.CV_64F);
         horizontalGaussianCov.put(0,0,horizontalXRes.getVariance());
         horizontalGaussianCov.put(0,1,0.0);
@@ -170,14 +183,103 @@ public class ProbabilisticPostProcesser {
         horizontalGaussianCov.put(1,1,horizontalYRes.getVariance());
         Core.invert(horizontalGaussianCov, inverseHorizontalGaussianCov);
         // Vertical Gaussian
+        inverseVerticalGaussianCov = new Mat();
         verticalGaussianCov = new Mat(2,2,CvType.CV_64F);
         verticalGaussianCov.put(0,0,verticalXRes.getVariance());
         verticalGaussianCov.put(0,1,0.0);
         verticalGaussianCov.put(1,0,0.0);
         verticalGaussianCov.put(1,1,verticalYRes.getVariance());
         Core.invert(verticalGaussianCov, inverseVerticalGaussianCov);
+
+        //Test Mahalanobis
+//        double probabilityThreshold = 0.99;
+//        double thresholdMahalanobisDistance = Math.sqrt(-2.0*Math.log(1.0-probabilityThreshold));
+//        double currThreshold = 1.0;
+//        while(currThreshold > 0)
+//        {
+//            double r = Math.sqrt(-2.0*Math.log(1.0-currThreshold));
+//            System.out.println("p="+currThreshold+" r="+r);
+//            currThreshold -= 0.05;
+//        }
+//        int rows = 250;
+//        int cols = 250;
+//        Mat dbgImage = new Mat(rows, cols, CvType.CV_8UC3);
+//        Mat mean = new Mat(2,1,CvType.CV_64F);
+//        mean.put(0,0,rows/2.0);
+//        mean.put(1,0,cols/2.0);
+//        Mat identity = Mat.eye(2,2,CvType.CV_64F);
+//        for(int i=0;i<rows;i++)
+//        {
+//            for(int j=0;j<cols;j++)
+//            {
+//                Mat p = new Mat(2,1,CvType.CV_64F);
+//                p.put(0,0,(double)j);
+//                p.put(1,0,(double)i);
+//                double mahDist = Utils.mahalanobisDistance(p, mean, identity);
+//                if(mahDist <= Constants.FILTER_ACCEPTANCE_RADIUS)
+//                    dbgImage.put(i,j,255,255,255);
+//                else
+//                    dbgImage.put(i,j,0,0,0);
+//            }
+//        }
+//        Utils.showImageInPopup(Utils.matToBufferedImage(dbgImage,null));
         // Write everything into the DB.
         System.out.println("XXX");
+    }
+
+    public void filter(List<Detection> detectionList)
+    {
+        // Sort all detections according to the top left box likelihood
+        List<Pair<Detection, Double>> topLeftCandidates = new ArrayList<>();
+        for(Detection detection : detectionList)
+        {
+            double topLeftLikelihood = getTopLeftDensity(detection.getRect().x, detection.getRect().y);
+            topLeftCandidates.add(new Pair<>(detection, topLeftLikelihood));
+        }
+        topLeftCandidates.sort(Comparator.comparingDouble(Pair::getSecond));
+        topLeftCandidates = Lists.reverse(topLeftCandidates);
+        double highestTopLeftProb = topLeftCandidates.get(0).getSecond();
+        topLeftCandidates = topLeftCandidates.stream().
+                filter(x -> x.getSecond() >= highestTopLeftProb*Constants.TOP_LEFT_ACCEPTANCE_THRESHOLD).
+                collect(Collectors.toList());
+        System.out.println(topLeftCandidates.toString());
+        for(Pair topLeftCandidateProbPair : topLeftCandidates)
+        {
+            Detection topLeftCandidate = (Detection)topLeftCandidateProbPair.getFirst();
+            double probability = (double)topLeftCandidateProbPair.getSecond();
+            Set<Detection> candidateSet = new HashSet<>(detectionList);
+            candidateSet.remove(topLeftCandidate);
+            Detection currPivot = topLeftCandidate;
+            for(int i=0;i<Constants.TOTAL_CHAR_COUNT/2;i++)
+            {
+                // Infer the next horizontal detection.
+                if(i < Constants.TOTAL_CHAR_COUNT/2-1)
+                {
+                    // for()
+                }
+
+            }
+
+
+//            for(Detection detection : detectionList)
+//            {
+//                if(detection == topLeftCandidate)
+//                    continue;
+//
+//            }
+        }
+
+
+    }
+
+    private Detection getNextBestHorizontalDetection(Detection currDetection, Set<Detection> candidateDetections)
+    {
+        double largestProb = -1.0;
+        for(Detection candidateDetection : candidateDetections)
+        {
+
+
+        }
     }
 
     private Mat[] getDesignAndTargetMatrices(List<List<GroundTruth>> pairs, boolean regressXcoord)

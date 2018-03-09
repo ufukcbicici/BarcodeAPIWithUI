@@ -36,6 +36,8 @@ public class Constants {
     public static final double QR_RATIO = 0.1;
     public static int THREAD_COUNT = 4;
     public static double POSITIVE_IOU_THRESHOLD = 0.5;
+    public static double FILTER_ACCEPTANCE_RADIUS = 4.0;
+    public static double TOP_LEFT_ACCEPTANCE_THRESHOLD = 0.001;
 
 
     public static final List<String> LABELS;

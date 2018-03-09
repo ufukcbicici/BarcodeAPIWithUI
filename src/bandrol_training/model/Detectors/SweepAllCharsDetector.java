@@ -7,6 +7,7 @@ import bandrol_training.model.Detection;
 import bandrol_training.model.Ensembles.EnsembleModel;
 import bandrol_training.model.Ensembles.SVMEnsemble;
 import bandrol_training.model.Utils;
+import bandrol_training.post_processing.ProbabilisticPostProcesser;
 import com.google.common.collect.Table;
 import jdk.jshell.spi.ExecutionControl;
 import org.opencv.core.*;
@@ -27,11 +28,14 @@ public class SweepAllCharsDetector extends DetectionMethod {
 
     private Map<String, EnsembleModel> ensembleMap;
     private ClassifierType classifierType;
+    private ProbabilisticPostProcesser postProcesser;
 
     public SweepAllCharsDetector(ClassifierType classifierType)
     {
         ensembleMap = new HashMap<>();
         this.classifierType = classifierType;
+        postProcesser = new ProbabilisticPostProcesser();
+        postProcesser.train(2);
     }
 
     public void init() throws ExecutionControl.NotImplementedException {
@@ -107,6 +111,10 @@ public class SweepAllCharsDetector extends DetectionMethod {
         List<Detection> ultimateMaxima = NonMaximaSuppression.run(listOfMaximaForAllLabels, nms_iou_threshold);
         long t5 = System.nanoTime();
         System.out.println("Final NMS Took:"+(double)(t5-t4)/1000000.0+" ms");
+
+        // Probabilistic Post Processer
+        postProcesser.filter(ultimateMaxima);
+        // Probabilistic Post Processer
 
         for (Detection dtc : ultimateMaxima) {
             Rect r = dtc.getRect();
