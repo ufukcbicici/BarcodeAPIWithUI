@@ -114,7 +114,7 @@ public class SweepAllCharsDetector extends DetectionMethod {
 
         // Probabilistic Post Processer
         long t6 = System.nanoTime();
-        postProcesser.filter(ultimateMaxima);
+        ultimateMaxima = postProcesser.filter(ultimateMaxima);
         long t7 = System.nanoTime();
         System.out.println("Postprocessing Took:"+(double)(t7-t6)/1000000.0+" ms");
         // Probabilistic Post Processer
