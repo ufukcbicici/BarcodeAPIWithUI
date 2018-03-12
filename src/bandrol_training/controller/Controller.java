@@ -130,6 +130,8 @@ public class Controller {
     @FXML
     private Button method_0_btn;
     @FXML
+    private Button method_0_btn_train;
+    @FXML
     private Button method_1_btn;
     private SweepAllCharsDetector detector;
 
@@ -207,6 +209,32 @@ public class Controller {
 //                    Double.parseDouble(nms_iou_threshold_txt_fld.getText()),
 //                    Double.parseDouble(object_sign_txt_field.getText()),
 //                    Double.parseDouble(reference_width_tf.getText()));
+        }
+    }
+
+    @FXML
+    public void run_method_0_train(ActionEvent actionEvent)
+    {
+        List<String> trainingImages = Utils.getAllTrainingImageNames();
+        // List<String> testImages = Utils.getAllTrainingImageNames();
+        double sliding_window_width = Double.parseDouble(sliding_window_width_tf.getText());
+        double sliding_window_height = Double.parseDouble(sliding_window_height_tf.getText());
+        double nms_iou_threshold = Double.parseDouble(nms_iou_threshold_txt_fld.getText());
+        for(String fileName : trainingImages)
+        {
+            String path = Constants.TRAINING_IMAGES + fileName;
+            System.out.println("Processing File:"+path);
+            Mat image = Imgcodecs.imread(path, Imgcodecs.CV_LOAD_IMAGE_COLOR);
+            Mat resizedSource = new Mat();
+            double referenceWidth = Double.parseDouble(reference_width_tf.getText());
+            double resizeRatio = referenceWidth / image.cols();
+            Imgproc.resize(image, resizedSource,
+                    new Size(resizeRatio*image.cols(),resizeRatio*image.rows()));
+            detector.detect(resizedSource,
+                    (int)sliding_window_width,
+                    (int)sliding_window_height,
+                    Double.parseDouble(reference_width_tf.getText()),
+                    nms_iou_threshold, true);
         }
     }
 
