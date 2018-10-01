@@ -1,0 +1,4 @@
+Java based GUI application for recognizing barcodes on alcoholic beverage bottles, which is required by the Turkish regulations.
+-Proof of Concept work, the file structure is little messy.
+-Includes both an annotator and classifier.
+-Uses ensembles of linear SVMs, working on sliding window HOG features. Based on the Dalal-Triggs pedestrian detectors.
